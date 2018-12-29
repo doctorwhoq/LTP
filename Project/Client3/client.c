@@ -257,6 +257,7 @@ void *downloadFile(){
         int getRepliesResult = recv(socketToDownload,buffer,sizeof(buffer),0);
         int getRepliesPort = recv(socketToDownload,&port,sizeof(port),0);
         printf("%s:Hello:port:%d",buffer,port);
+        printf("Ready to connect to new host %s %d",buffer,port);
         /*
         time2 = clock();{
             if(time2 -time1 > (10*CLOCKS_PER_SEC))
