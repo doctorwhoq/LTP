@@ -75,7 +75,7 @@ int main(){
     return 0;
 }
 void * handleSynThread(void *socketInfo){
-    printf("Handle Syn Thread ");
+    printf("Synchronizing");
     int i;
     //printf("haha");
     int socketId = *((int *)socketInfo);
@@ -85,7 +85,7 @@ void * handleSynThread(void *socketInfo){
         int foundPort = 1983;
         int repliesResult = send(socketId,foundAddresses,sizeof(foundAddresses) + 2,0);// get all the lteer
         int repliesResult2 = send(socketId,&foundPort,sizeof(foundPort),0);
-        printf(" INT recevied is %d",i);
+        printf(" INT recevied is %d\n",i);
     }
     
 
