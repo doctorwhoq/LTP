@@ -79,12 +79,15 @@ void * handleSynThread(void *socketInfo){
     int i;
     //printf("haha");
     int socketId = *((int *)socketInfo);
-    int readBytes = recv(socketId,&i,sizeof(i),0);
-    char* foundAddresses = "127.0.0.13";
-    int foundPort = 1983;
-    int repliesResult = send(socketId,foundAddresses,sizeof(foundAddresses) + 2,0);// get all the lteer
-    int repliesResult2 = send(socketId,&foundPort,sizeof(foundPort),0);
-    printf(" INT recevied is %d",i);
+    while(1){
+        int readBytes = recv(socketId,&i,sizeof(i),0);
+        char* foundAddresses = "127.0.0.13";
+        int foundPort = 1983;
+        int repliesResult = send(socketId,foundAddresses,sizeof(foundAddresses) + 2,0);// get all the lteer
+        int repliesResult2 = send(socketId,&foundPort,sizeof(foundPort),0);
+        printf(" INT recevied is %d",i);
+    }
+    
 
     return NULL;
 }
