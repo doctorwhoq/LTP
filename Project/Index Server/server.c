@@ -20,7 +20,6 @@ const int MAX_CLIENTS = 5;
 void * handleSynThread(void *);
 void * handleReqThread(void *);
 
-
 void saveClientAddr(const char *fileName, char *addr, char* portAndSizeFile)
 {
     //save client addr as IP:PORT.txt\n
@@ -34,7 +33,6 @@ void saveClientAddr(const char *fileName, char *addr, char* portAndSizeFile)
     strcat(fileName, getPort);
     strcat(fileName, ".txt");
     strcat(fileName, "\n");
-
     return;
 }
 
@@ -66,12 +64,12 @@ int main()
     indexHost.sin_addr.s_addr =htonl(INADDR_ANY);;
     memset(indexHost.sin_zero, '\0', sizeof indexHost.sin_zero);  
     bind(listenSock, (struct sockaddr *) &indexHost, sizeof(indexHost));
-    if(listen(listenSock, MAX_CLIENTS) == 0){
+
+    if(listen(listenSock, MAX_CLIENTS) == 0)
         printf("Index Host running at : %s port %d \n",INDEX_HOST,INDEX_PORT);
-    }
-    else {
+    else 
         printf("Listening failed, server stopped \n");
-    }
+        
     int* acceptedSocket;
      /* accepting new connections*/
     while(1)
