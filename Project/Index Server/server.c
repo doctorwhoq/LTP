@@ -86,13 +86,12 @@ int main()
         else{
             pthread_create(&reqThread, NULL ,&handleReqThread,(void *)acceptedSocket);
         }    
-        
-        
+         
     }
     return 0;
 }
 
-void * handleSynThread(void *socketInfo)
+void *handleSynThread(void *socketInfo)
 {
     printf("Synchronizing");
     int i;
@@ -131,9 +130,10 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         if (getcwd(cwd, sizeof(cwd)) != NULL) 
         {
             //printf("Current working dir: %s\n", cwd);
-        } else 
+        } 
+        else 
         {
-                perror("getcwd() error");
+            perror("getcwd() error");
             return 0;
         }
         //perror(" fopen ");
@@ -147,12 +147,11 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
     {
         fseek(file, 0L, SEEK_END);
         totalSize = ftell(file);
+        rewind(file);
         //write(socket, &totalSize, sizeof(totalSize));
-        fclose(file);
-        
+
         if (totalSize > 0)
         {
-            file = fopen(fileName, "r");
             while (sizeof(segment) <= maxTransUnit)
             {
                 maxTransUnit = fread(segment, 1, 1240, file);
