@@ -95,3 +95,78 @@ void * handleReqThread(void *socketInfo){
     printf("Handle Req Thread");
     return NULL;
 }
+int sendFile(char* fileName, int socket)
+{
+    int size = 0, maxTransUnit = 1240;
+    char segment[1240] = {0};
+
+    int totalSize = 0;
+    FILE *file = fopen(fileName, "r");
+    if(file == NULL) {
+    char cwd[100];   
+            
+            if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                //printf("Current working dir: %s\n", cwd);
+             } else {
+                 perror("getcwd() error");
+                return 0;
+   }
+            //perror(" fopen ");
+			printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
+			totalSize = 0;
+			write(socket, &totalSize, sizeof(totalSize));
+            return 0;
+            
+    } else {
+            fseek(file, 0L, SEEK_END);
+            totalSize = ftell(file);
+            write(socket, &totalSize, sizeof(totalSize));
+            fclose(file);
+            if (totalSize > 0)
+            {
+                file = fopen(fileName, "r");
+                while (sizeof(segment) <= maxTransUnit)
+                {
+                    maxTransUnit = fread(segment, 1, 1240, file);
+                    segment[maxTransUnit] = 0;
+                    write(socket, segment, maxTransUnit);
+                    size += maxTransUnit;
+                }
+                printf("\t \t \t Sent %s  ! \n   ",fileName); 
+                
+               
+                fclose(file);
+                return 1;
+            }
+        }
+    return 1;
+}
+void  receiveFile(char* fileName, int socket){
+	clock_t time = 0;
+	int maxTransUnit = 1240;
+	int size = 0, totalSize = 0;
+    char segment[1240] = {0};
+	char str[80];
+	fileName[0] = 'R';
+	
+    read(socket, &totalSize, sizeof(totalSize));
+    if(totalSize <= 0) {
+        printf("Server response with file size = 0 \n");
+    } else {
+		
+        FILE *file = fopen(fileName, "w");
+		time = clock();
+		printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
+        while(sizeof(segment) <= maxTransUnit) {
+            maxTransUnit = read(socket, segment, sizeof(segment));
+            segment[maxTransUnit] = 0;
+            fwrite(segment, 1, maxTransUnit, file);
+            size += maxTransUnit;
+        }
+		time  = clock() - time;
+		double time_taken = ((double)time)/CLOCKS_PER_SEC;
+        printf("Received %d bytes in %lf seconds \n\n\n\n",size, time_taken);
+        fclose(file);
+    }
+}
+
