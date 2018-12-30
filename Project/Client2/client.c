@@ -269,6 +269,37 @@ void *downloadFile(){
     return NULL;
 
 }
+int receiveFile(char* fileName,int file_size, int socket){
+	clock_t time = 0;
+	int maxTransUnit = 1240;
+	int size = 0, totalSize = 0;
+    char segment[1240] = {0};
+	char str[80];
+	//fileName[0] = 'R';
+	totalSize = file_size;
+    //read(socket, &totalSize, sizeof(totalSize));
+    if(totalSize <= 0) {
+        printf("Partner response with file size = 0 \n");
+        return 0;
+    } else {
+		
+        FILE *file = fopen(fileName, "w");
+		time = clock();
+		//printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
+        while(sizeof(segment) <= maxTransUnit) {
+            maxTransUnit = read(socket, segment, sizeof(segment));
+            segment[maxTransUnit] = 0;
+            fwrite(segment, 1, maxTransUnit, file);
+            size += maxTransUnit;
+        }
+		time  = clock() - time;
+		double time_taken = ((double)time)/CLOCKS_PER_SEC;
+        printf("Received %d bytes in %lf seconds \n\n\n\n",size, time_taken);
+        fclose(file);
+        return 1;
+    }
+}
+
 
 
 
