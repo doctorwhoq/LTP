@@ -93,21 +93,35 @@ int main()
 
 void *handleSynThread(void *socketInfo)
 {
-    printf("Synchronizing");
+    printf("New thread created for Synchronizing \n");
+    pthread_detach(pthread_self());
+    
     int i;
     int socketId = *((int *)socketInfo);
+    char buffer[50];
+    bzero(buffer, sizeof(buffer));
     while(1)
     {
-        int readBytes = recv(socketId,&i,sizeof(i),0);
-        char* foundAddresses = "127.0.0.13";
-        int foundPort = 1983;
-        int repliesResult = send(socketId,foundAddresses,sizeof(foundAddresses) + 2,0);// get all the lteer
-        int repliesResult2 = send(socketId,&foundPort,sizeof(foundPort),0);
-        printf(" INT recevied is %d\n",i);
+        
+        int readResult = read(socketId,&i,sizeof(i));
+        if(i == 0){
+            printf("Client doesnt want to send anything \n");
+            break;
+        }
+        if(readResult == 0 )
+        {
+            printf("  Client has closed its connection \n ");
+            break;
+            //fix client ctrl+c or buffer = ""
+        }
+        receiveFile("ClientIndexfile.txt",20,socketId);
+        printf("%d Sent code", i);
+        
     }
-    
-
-    return NULL;
+    close(socketId);
+    printf("Thread exited\n");
+    free(socketInfo);
+    return ;
 }
 
 void * handleReqThread(void *socketInfo)
@@ -133,7 +147,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         } 
         else 
         {
-            perror("getcwd() error");
+            //perror("getcwd() error");
             return 0;
         }
         //perror(" fopen ");

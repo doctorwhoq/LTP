@@ -86,7 +86,7 @@ int main(int argc, char *argv[])
 
 
     // Run backgroud Synchronize 
-    pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
+    //pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
     pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
@@ -260,29 +260,23 @@ void *downloadFile()
 
     time_t time1 = clock();
     time_t time2 = clock();
+    //char buffer[15];
+    char buffer[50];
+    bzero(buffer, sizeof(buffer));
+    int i;
+
     while(1)
     {
-        int i;
-        printf("Nhap code \n");
-        char buffer[15];
+        
+        printf("Ready Upload list to Server, enter code \n");
         scanf("%d",&i);
-        int port;
-        int sentBytes = send(socketToDownload,&i,sizeof(i),0);
-        int getRepliesResult = recv(socketToDownload,buffer,sizeof(buffer),0);
-        int getRepliesPort = recv(socketToDownload,&port,sizeof(port),0);
-        printf("%s:Hello:port:%d\n",buffer,port);
-        printf("Ready to connect to new host %s %d\n`",buffer,port);
-        /*
-        time2 = clock();{
-            if(time2 -time1 > (10*CLOCKS_PER_SEC))
-            {
-                time1 = clock();
-                printf("Doctor \n");
-            }
-        }*/
+        write(socketToDownload,&i,sizeof(i));
+        //write(socketToDownload,"Hello \n",50);
+        printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
+       
     }
+    
     return NULL;
-
 }
 
 
@@ -301,8 +295,8 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
             //printf("Current working dir: %s\n", cwd);
         } else 
         {
-            perror("getcwd() error");
-        return 0;
+            //perror(" dkm xa hoigetcwd() error");
+            return 0;
         }
         //perror(" fopen ");
         printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);

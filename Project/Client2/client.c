@@ -83,7 +83,7 @@ int main(int argc, char *argv[]){
 
 
     // Run backgroud Synchronize 
-    pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
+    //pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
     pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
@@ -300,6 +300,53 @@ int receiveFile(char* fileName,int file_size, int socket){
     }
 }
 
+int sendFile(char* fileName, int socket) // has sent file_size b4
+{
+    int size = 0, maxTransUnit = 1240;
+    char segment[1240] = {0};
+
+    int totalSize = 0;
+    FILE *file = fopen(fileName, "r");
+    if(file == NULL) 
+    {
+        char cwd[100];      
+        if (getcwd(cwd, sizeof(cwd)) != NULL) 
+        {
+            //printf("Current working dir: %s\n", cwd);
+        } else 
+        {
+            perror("getcwd() error");
+        return 0;
+        }
+        //perror(" fopen ");
+        printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
+        totalSize = 0;
+        write(socket, &totalSize, sizeof(totalSize));
+        return 0;     
+    }
+    else 
+    {
+        fseek(file, 0L, SEEK_END);
+        totalSize = ftell(file);
+        //write(socket, &totalSize, sizeof(totalSize));
+        fclose(file);
+        if (totalSize > 0)
+        {
+            file = fopen(fileName, "r");
+            while (sizeof(segment) <= maxTransUnit)
+            {
+                maxTransUnit = fread(segment, 1, 1240, file);
+                segment[maxTransUnit] = 0;
+                write(socket, segment, maxTransUnit);
+                size += maxTransUnit;
+            }
+            printf("\t \t \t Sent %s  ! \n   ",fileName); 
+            fclose(file);
+            return 1;
+        }
+    }
+    return 1;
+}
 
 
 
