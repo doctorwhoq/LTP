@@ -95,7 +95,7 @@ void * handleReqThread(void *socketInfo){
     printf("Handle Req Thread");
     return NULL;
 }
-int sendFile(char* fileName, int socket)
+int sendFile(char* fileName, int socket) // has sent file_size b4
 {
     int size = 0, maxTransUnit = 1240;
     char segment[1240] = {0};
@@ -120,7 +120,7 @@ int sendFile(char* fileName, int socket)
     } else {
             fseek(file, 0L, SEEK_END);
             totalSize = ftell(file);
-            write(socket, &totalSize, sizeof(totalSize));
+            //write(socket, &totalSize, sizeof(totalSize));
             fclose(file);
             if (totalSize > 0)
             {
@@ -141,22 +141,23 @@ int sendFile(char* fileName, int socket)
         }
     return 1;
 }
-void  receiveFile(char* fileName, int socket){
+int receiveFile(char* fileName,int file_size, int socket){
 	clock_t time = 0;
 	int maxTransUnit = 1240;
 	int size = 0, totalSize = 0;
     char segment[1240] = {0};
 	char str[80];
-	fileName[0] = 'R';
-	
-    read(socket, &totalSize, sizeof(totalSize));
+	//fileName[0] = 'R';
+	totalSize = file_size;
+    //read(socket, &totalSize, sizeof(totalSize));
     if(totalSize <= 0) {
-        printf("Server response with file size = 0 \n");
+        printf("Partner response with file size = 0 \n");
+        return 0;
     } else {
 		
         FILE *file = fopen(fileName, "w");
 		time = clock();
-		printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
+		//printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
         while(sizeof(segment) <= maxTransUnit) {
             maxTransUnit = read(socket, segment, sizeof(segment));
             segment[maxTransUnit] = 0;
@@ -167,6 +168,7 @@ void  receiveFile(char* fileName, int socket){
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
         printf("Received %d bytes in %lf seconds \n\n\n\n",size, time_taken);
         fclose(file);
+        return 1;
     }
 }
 
