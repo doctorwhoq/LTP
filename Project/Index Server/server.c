@@ -126,7 +126,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
     FILE *file = fopen(fileName, "r");
     if(file == NULL) 
     {
-    char cwd[100];   
+        char cwd[100];   
             
         if (getcwd(cwd, sizeof(cwd)) != NULL) 
         {
@@ -149,6 +149,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         totalSize = ftell(file);
         //write(socket, &totalSize, sizeof(totalSize));
         fclose(file);
+        
         if (totalSize > 0)
         {
             file = fopen(fileName, "r");
