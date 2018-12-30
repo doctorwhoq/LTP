@@ -56,7 +56,8 @@ int main(){
     }
     int* acceptedSocket;
      /* accepting new connections*/
-    while(1){
+    while(1)
+    {
 
         acceptedSocket = malloc(sizeof(int));
         *acceptedSocket = accept(listenSock, (struct sockaddr *) &clientAddr, &addr_size);
@@ -74,12 +75,14 @@ int main(){
     }
     return 0;
 }
-void * handleSynThread(void *socketInfo){
+void * handleSynThread(void *socketInfo)
+{
     printf("Synchronizing");
     int i;
     //printf("haha");
     int socketId = *((int *)socketInfo);
-    while(1){
+    while(1)
+    {
         int readBytes = recv(socketId,&i,sizeof(i),0);
         char* foundAddresses = "127.0.0.13";
         int foundPort = 1983;
@@ -95,6 +98,7 @@ void * handleReqThread(void *socketInfo){
     printf("Handle Req Thread");
     return NULL;
 }
+
 int sendFile(char* fileName, int socket) // has sent file_size b4
 {
     int size = 0, maxTransUnit = 1240;
@@ -105,42 +109,47 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
     if(file == NULL) {
     char cwd[100];   
             
-            if (getcwd(cwd, sizeof(cwd)) != NULL) {
+            if (getcwd(cwd, sizeof(cwd)) != NULL) 
+            {
                 //printf("Current working dir: %s\n", cwd);
-             } else {
+            } else 
+            {
                  perror("getcwd() error");
                 return 0;
-   }
+            }
             //perror(" fopen ");
 			printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
 			totalSize = 0;
 			write(socket, &totalSize, sizeof(totalSize));
             return 0;
             
-    } else {
-            fseek(file, 0L, SEEK_END);
-            totalSize = ftell(file);
-            //write(socket, &totalSize, sizeof(totalSize));
-            fclose(file);
-            if (totalSize > 0)
+    } else 
+    {
+        fseek(file, 0L, SEEK_END);
+        totalSize = ftell(file);
+        //write(socket, &totalSize, sizeof(totalSize));
+        fclose(file);
+        if (totalSize > 0)
+        {
+            file = fopen(fileName, "r");
+            while (sizeof(segment) <= maxTransUnit)
             {
-                file = fopen(fileName, "r");
-                while (sizeof(segment) <= maxTransUnit)
-                {
-                    maxTransUnit = fread(segment, 1, 1240, file);
-                    segment[maxTransUnit] = 0;
-                    write(socket, segment, maxTransUnit);
-                    size += maxTransUnit;
-                }
-                printf("\t \t \t Sent %s  ! \n   ",fileName); 
-                
-               
-                fclose(file);
-                return 1;
+                maxTransUnit = fread(segment, 1, 1240, file);
+                segment[maxTransUnit] = 0;
+                write(socket, segment, maxTransUnit);
+                size += maxTransUnit;
             }
+            printf("\t \t \t Sent %s  ! \n   ",fileName); 
+            
+            
+            fclose(file);
+            return 1;
         }
+    }
     return 1;
 }
+
+
 int receiveFile(char* fileName,int file_size, int socket){
 	clock_t time = 0;
 	int maxTransUnit = 1240;
