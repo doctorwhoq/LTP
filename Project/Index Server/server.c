@@ -170,3 +170,81 @@ void  receiveFile(char* fileName, int socket){
     }
 }
 
+
+void sendPeerListHasFile(char filename[])
+{
+    //int fd = *(int *)sockfd;
+    FILE* listPeerHasFile,*fcheck;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    listPeerHasFile = fopen("ListFileSentToServer.txt", "w");
+	fflush(listPeerHasFile);
+    if(listPeerHasFile == NULL)
+	{
+		printf("\nError opening list file");
+		exit(1);
+	}
+
+    //create file to read all file in share folder
+	struct dirent *de;  // Pointer for directory entry 
+  
+    // opendir() returns a pointer of DIR type.  
+    DIR *dr = opendir("./peerShare"); 
+    if (dr == NULL)  // opendir returns NULL if couldn't open directory 
+    { 
+        printf("Could not open current directory" ); 
+        return 0; 
+    } 
+
+    // for readdir() 
+    while ((de = readdir(dr)) != NULL)
+	{
+        line = NULL;
+        len = 0;
+        
+
+		if(!strcmp(de->d_name, "."))
+		{
+			continue;
+		}
+		else if(!strcmp(de->d_name, ".."))
+		{
+			continue;
+		}
+		else
+		{
+            char IP[100];
+            strcpy(IP,"./peerShare/");
+            char buffer[255];
+            strcat(IP, de->d_name);
+            fcheck = fopen(IP, "r");
+            if(fcheck == NULL)
+            {
+                printf("Error opening file");
+            }
+            else
+            {
+                while ((read = getline(&line, &len, fcheck)) != -1) 
+                {
+                    printf("%s", line);
+                    
+                    if(strcmp(filename, line)==0)
+                    {
+                        printf("%s\n", de->d_name);
+                        
+                        fprintf(listPeerHasFile, "%s\n", de->d_name);	
+                    }
+                }
+    
+                
+            }
+            fclose (fcheck);
+			
+		}
+	}  
+    closedir(dr);   
+	fclose(listPeerHasFile);
+
+}
