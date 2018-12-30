@@ -265,7 +265,7 @@ void sendPeerListHasFile(char fileName[])
                 {
                     printf("%s", line);
                     
-                    if(strcmp(filename, line)==0)
+                    if(strcmp(fileName, line)==0)
                     {
                         printf("%s\n", de->d_name);
                         
