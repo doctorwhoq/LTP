@@ -38,14 +38,14 @@ void saveClientAddr(const char *fileName, char *addr, char* portAndSizeFile)
     return;
 }
 
-int main(){
+int main()
+{
     setvbuf (stdout, NULL, _IONBF, 0);
     int listenSock;
     int numberOfClient;
     struct sockaddr_in indexHost;
     struct sockaddr_in clientAddr;
     socklen_t addr_size;
-
 
     addr_size = sizeof(indexHost);
 
@@ -58,9 +58,9 @@ int main(){
     	perror("setsockopt(SO_REUSEADDR) failed");
     if (setsockopt(listenSock, SOL_SOCKET, SO_REUSEPORT, (const char*)&enable, sizeof(int)) < 0) 
         perror("setsockopt(SO_REUSEPORT) failed");
-    if(listenSock < 0){
+    if(listenSock < 0)
         printf("Create socket failed \n");
-    }
+    
     indexHost.sin_family = AF_INET;
     indexHost.sin_port = htons(INDEX_PORT);
     indexHost.sin_addr.s_addr =htonl(INADDR_ANY);;
@@ -113,7 +113,9 @@ void * handleSynThread(void *socketInfo)
 
     return NULL;
 }
-void * handleReqThread(void *socketInfo){
+
+void * handleReqThread(void *socketInfo)
+{
     printf("Handle Req Thread");
     return NULL;
 }
@@ -207,17 +209,17 @@ int receiveFile(char* fileName,int file_size, int socket)
 }
 
 
-void sendPeerListHasFile(char fileName[])
+void createFileHasReqFileToClient(char fileName[])
 {
     //int fd = *(int *)sockfd;
-    FILE* listPeerHasFile,*fcheck;
+    FILE* peerHasFileList,*fcheck;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
 
-    listPeerHasFile = fopen("ListFileSentToServer.txt", "w");
-	fflush(listPeerHasFile);
-    if(listPeerHasFile == NULL)
+    peerHasFileList = fopen("FileToAnsReqToClient.txt", "w");
+	fflush(peerHasFileList);
+    if(peerHasFileList == NULL)
 	{
 		printf("\nError opening list file");
 		exit(1);
@@ -265,11 +267,11 @@ void sendPeerListHasFile(char fileName[])
                 {
                     printf("%s", line);
                     
-                    if(strcmp(filename, line)==0)
+                    if(strcmp(fileName, line)==0)
                     {
                         printf("%s\n", de->d_name);
                         
-                        fprintf(listPeerHasFile, "%s\n", de->d_name);	
+                        fprintf(peerHasFileList, "%s\n", de->d_name);	
                     }
                 }
     
@@ -280,7 +282,7 @@ void sendPeerListHasFile(char fileName[])
 		}
 	}  
     closedir(dr);   
-	fclose(listPeerHasFile);
+	fclose(peerHasFileList);
 
 }
 
