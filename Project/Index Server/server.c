@@ -20,6 +20,24 @@ const int MAX_CLIENTS = 5;
 void * handleSynThread(void *);
 void * handleReqThread(void *);
 
+
+void saveClientAddr(const char *fileName, char *addr, char* portAndSizeFile)
+{
+    //save client addr as IP:PORT.txt\n
+
+    //cannot pointing string literal, use strdup to use strtok
+    char *str = strdup(portAndSizeFile);
+    char* getPort = strtok(str, ":");
+    
+    strcpy(fileName, addr);
+    strcat(fileName, ":");
+    strcat(fileName, getPort);
+    strcat(fileName, ".txt");
+    strcat(fileName, "\n");
+
+    return;
+}
+
 int main(){
     setvbuf (stdout, NULL, _IONBF, 0);
     int listenSock;
@@ -75,6 +93,7 @@ int main(){
     }
     return 0;
 }
+
 void * handleSynThread(void *socketInfo)
 {
     printf("Synchronizing");
@@ -106,24 +125,26 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
 
     int totalSize = 0;
     FILE *file = fopen(fileName, "r");
-    if(file == NULL) {
+    if(file == NULL) 
+    {
     char cwd[100];   
             
-            if (getcwd(cwd, sizeof(cwd)) != NULL) 
-            {
-                //printf("Current working dir: %s\n", cwd);
-            } else 
-            {
-                 perror("getcwd() error");
-                return 0;
-            }
-            //perror(" fopen ");
-			printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
-			totalSize = 0;
-			write(socket, &totalSize, sizeof(totalSize));
+        if (getcwd(cwd, sizeof(cwd)) != NULL) 
+        {
+            //printf("Current working dir: %s\n", cwd);
+        } else 
+        {
+                perror("getcwd() error");
             return 0;
+        }
+        //perror(" fopen ");
+        printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
+        totalSize = 0;
+        write(socket, &totalSize, sizeof(totalSize));
+        return 0;
             
-    } else 
+    } 
+    else 
     {
         fseek(file, 0L, SEEK_END);
         totalSize = ftell(file);
@@ -150,7 +171,8 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
 }
 
 
-int receiveFile(char* fileName,int file_size, int socket){
+int receiveFile(char* fileName,int file_size, int socket)
+{
 	clock_t time = 0;
 	int maxTransUnit = 1240;
 	int size = 0, totalSize = 0;
@@ -159,10 +181,13 @@ int receiveFile(char* fileName,int file_size, int socket){
 	//fileName[0] = 'R';
 	totalSize = file_size;
     //read(socket, &totalSize, sizeof(totalSize));
-    if(totalSize <= 0) {
+    if(totalSize <= 0) 
+    {
         printf("Partner response with file size = 0 \n");
         return 0;
-    } else {
+    } 
+    else 
+    {
 		
         FILE *file = fopen(fileName, "w");
 		time = clock();
@@ -182,7 +207,7 @@ int receiveFile(char* fileName,int file_size, int socket){
 }
 
 
-void sendPeerListHasFile(char filename[])
+void sendPeerListHasFile(char fileName[])
 {
     //int fd = *(int *)sockfd;
     FILE* listPeerHasFile,*fcheck;
@@ -228,7 +253,6 @@ void sendPeerListHasFile(char filename[])
 		{
             char IP[100];
             strcpy(IP,"./peerShare/");
-            char buffer[255];
             strcat(IP, de->d_name);
             fcheck = fopen(IP, "r");
             if(fcheck == NULL)
@@ -259,3 +283,4 @@ void sendPeerListHasFile(char filename[])
 	fclose(listPeerHasFile);
 
 }
+
