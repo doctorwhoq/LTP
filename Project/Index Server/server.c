@@ -238,7 +238,6 @@ void createFileHasReqFileToClient(char fileName[])
 	{
         line = NULL;
         len = 0;
-        
 
 		if(!strcmp(de->d_name, "."))
 		{
