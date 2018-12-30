@@ -206,7 +206,7 @@ void sendPeerListHasFile(char filename[])
     if (dr == NULL)  // opendir returns NULL if couldn't open directory 
     { 
         printf("Could not open current directory" ); 
-        return 0; 
+        //return 0; 
     } 
 
     // for readdir() 
