@@ -69,7 +69,7 @@ int main()
         printf("Index Host running at : %s port %d \n",INDEX_HOST,INDEX_PORT);
     else 
         printf("Listening failed, server stopped \n");
-        
+
     int* acceptedSocket;
      /* accepting new connections*/
     while(1)
@@ -96,7 +96,6 @@ void * handleSynThread(void *socketInfo)
 {
     printf("Synchronizing");
     int i;
-    //printf("haha");
     int socketId = *((int *)socketInfo);
     while(1)
     {
