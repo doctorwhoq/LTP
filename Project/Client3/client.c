@@ -18,7 +18,7 @@
 const int BIND_PORT_CLIENT_1 = 11000;
 const int DEFAULT_SIZE = 1024;
 const int DEFAULT_LENGTH = 20;
-const char* INDEX_HOST =  "127.0.0.1";
+const char* INDEX_HOST =  "192.168.0.100";
 const int INDEX_PORT = 15000;
 const char* LOCAL_FILE = "Public/";
 const char* LIST_FILE = "index.txt";
@@ -262,7 +262,7 @@ void *downloadFile()
         printf("Ready Upload list to Server, enter code \n");
         scanf("%d",&i);
         write(socketToDownload,&i,sizeof(i));
-        //write(socketToDownload,"Hello \n",50);
+        write(socketToDownload,"Hello \n",50);
         //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
        
     }

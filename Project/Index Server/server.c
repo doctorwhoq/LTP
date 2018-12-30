@@ -130,7 +130,7 @@ void * handleReqThread(void *socketInfo)
             break;
             //fix client ctrl+c or buffer = ""
         }
-        //receiveFile("ClientIndexfile.txt",20,socketId);
+        receiveFile("ClientIndexfile.txt",20,socketId);
         printf("%d Sent code\n", i);
         
     }
