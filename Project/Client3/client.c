@@ -262,8 +262,8 @@ void *downloadFile()
         printf("Ready Upload list to Server, enter code \n");
         scanf("%d",&i);
         write(socketToDownload,&i,sizeof(i));
-        write(socketToDownload,"Hello \n",50);
-        //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
+        //write(socketToDownload,"Hello \n",50);
+        printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
        
     }
     /*char *addr;
