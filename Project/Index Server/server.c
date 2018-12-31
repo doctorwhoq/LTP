@@ -111,11 +111,11 @@ void *handleSynThread(void *socketInfo)
     int readResult = read(socketId,&i,sizeof(i));
     printf("Current update from client : %d\n",i);
     if(receiveFile("ClientIndexfile.txt",socketId) == 1) {
-        printf("Synchronizing successfully \n\n");
+        printf("Synchronizing successfully \n");
     }else{
         printf("Syncronize failed \n");
     }
-    
+    printf("This thread has been closed \n");
     return NULL;
 }
 
@@ -234,7 +234,7 @@ int receiveFile(char* fileName, int socket)
         }
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
-        printf("Received %d bytes in %lf seconds \n\n",size, time_taken);
+        printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
         fclose(file);
         return 1;
     }

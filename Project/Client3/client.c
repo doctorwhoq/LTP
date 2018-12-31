@@ -225,10 +225,10 @@ void *synchronizeFolder()
             else {
                 printf("Updating to Server in process \n");
             }
-            printf("%d**\n",write(socketToUpdate,SYNREQ,SYNREQ_SIZE));
+            write(socketToUpdate,SYNREQ,SYNREQ_SIZE);
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
-            printf("%d@@", write(socketToUpdate,&updateCount,sizeof(int)));
+             write(socketToUpdate,&updateCount,sizeof(int));
             //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
@@ -336,7 +336,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
                 write(socket, segment, maxTransUnit);
                 size += maxTransUnit;
             }
-            printf("\t \t \t Sent %s  ! \n   ",fileName); 
+            printf("=====Sent %s  ! \n   ",fileName); 
             fclose(file);
             return 1;
         }
