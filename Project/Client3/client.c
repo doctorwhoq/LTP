@@ -146,8 +146,6 @@ int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
     
     int connectStatus;
     // allocation of socket 
-
-    socketToUpdate = malloc(sizeof(int));
     // create a socket Ipv4, TCP , TCP'S protocol
     *socketToUpdate = socket(AF_INET,SOCK_STREAM,0);
     if(*socketToUpdate < 0 )
@@ -243,26 +241,12 @@ void *downloadFile()
     struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
     int connectStatus;
-    // allocation of socket 
-
-    // create a socket Ipv4, TCP , TCP'S protocol
-    socketToDownload = socket(AF_INET,SOCK_STREAM,0);
-    if(socketToDownload < 0 )
-    {
-        printf("Socket Creation Error \n");
-        exit(0);
-    }
-    // Create target server IPv4, TCP, PORT ,IP ADDRESS     
-    indexServerAddr.sin_family = AF_INET;
-    indexServerAddr.sin_port = htons(INDEX_PORT);
-    indexServerAddr.sin_addr.s_addr = inet_addr(INDEX_HOST);
-    server_address_size = sizeof(indexServerAddr);
-    // Connect to server
-    connectStatus = connect(socketToDownload,(struct sockaddr *)&indexServerAddr,server_address_size);
-    if(connectStatus <0 )
+    if(connectToServerFunction(&socketToDownload,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
-    else 
-        printf("IndexServer Connected\n");
+        return ;
+    } else {
+         printf("IndexServer Connected\n");
+    }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
     printf("%d",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
     time_t time1 = clock();
@@ -279,7 +263,7 @@ void *downloadFile()
         scanf("%d",&i);
         write(socketToDownload,&i,sizeof(i));
         //write(socketToDownload,"Hello \n",50);
-        printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
+        //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
        
     }
     /*char *addr;
