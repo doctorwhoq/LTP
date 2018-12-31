@@ -84,9 +84,9 @@ int main()
         if (errno == EINTR) continue;
             else;// perror("accept error");
         printf("------>New connection accepted\n");
-        char buffer[40];
+        char buffer[12];
         bzero(buffer,sizeof(buffer));
-        int cout =read(*acceptedSocket,buffer,sizeof(buffer));  
+        int cout =read(*acceptedSocket,buffer,DOWNREQ_SIZE);  
         printf("Current Request :%s\n",buffer);
           
         if(strcmp(buffer,SYNREQ) == 0){
@@ -108,8 +108,8 @@ void *handleSynThread(void *socketInfo)
     int socketId = *((int *)socketInfo);
     char buffer[50];
     bzero(buffer, sizeof(buffer));
-    int readResult = read(socketId,buffer,sizeof(buffer));
-    printf("Current update from client : %s\n",buffer);
+    int readResult = read(socketId,&i,sizeof(i));
+    printf("Current update from client : %d\n",i);
     if(receiveFile("ClientIndexfile.txt",socketId) == 1) {
         printf("Synchronizing successfully \n\n");
     }else{
@@ -234,7 +234,7 @@ int receiveFile(char* fileName, int socket)
         }
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
-        printf("Received %d bytes in %lf seconds \n\n\n\n",size, time_taken);
+        printf("Received %d bytes in %lf seconds \n\n",size, time_taken);
         fclose(file);
         return 1;
     }

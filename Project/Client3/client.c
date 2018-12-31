@@ -228,7 +228,7 @@ void *synchronizeFolder()
             printf("%d**\n",write(socketToUpdate,SYNREQ,SYNREQ_SIZE));
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
-            printf("%d@@", write(socketToUpdate,updateVer,4));
+            printf("%d@@", write(socketToUpdate,&updateCount,sizeof(int)));
             //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
