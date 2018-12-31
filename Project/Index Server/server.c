@@ -83,17 +83,17 @@ int main()
         *acceptedSocket = accept(listenSock, (struct sockaddr *) &clientAddr, &addr_size);
         if (errno == EINTR) continue;
             else;// perror("accept error");
-        printf("New connection accepted\n");
+        printf("------>New connection accepted\n");
         char buffer[40];
         bzero(buffer,sizeof(buffer));
         int cout =read(*acceptedSocket,buffer,sizeof(buffer));  
-        printf("Current Request : %s\n",buffer);
+        printf("Current Request :%s\n",buffer);
           
         if(strcmp(buffer,SYNREQ) == 0){
             pthread_create(&synThread, NULL ,&handleSynThread,(void *)acceptedSocket);
         }
         else if ( strcmp(buffer,DOWNREQ) == 0) {
-            pthread_create(&reqThread, NULL ,&handleReqThread,(void *)acceptedSocket);
+            //pthread_create(&reqThread, NULL ,&handleReqThread,(void *)acceptedSocket);
         }    
          
     }
@@ -104,6 +104,17 @@ void *handleSynThread(void *socketInfo)
 {
     pthread_detach(pthread_self());
     printf("New thread created for Synchronizing \n");
+    int i;
+    int socketId = *((int *)socketInfo);
+    char buffer[50];
+    bzero(buffer, sizeof(buffer));
+    int readResult = read(socketId,buffer,sizeof(buffer));
+    printf("Current update from client : %s\n",buffer);
+    if(receiveFile("ClientIndexfile.txt",socketId) == 1) {
+        printf("Synchronizing successfully \n\n");
+    }else{
+        printf("Syncronize failed \n");
+    }
     
     return NULL;
 }
@@ -173,7 +184,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         fseek(file, 0L, SEEK_END);
         totalSize = ftell(file);
         rewind(file);
-        //write(socket, &totalSize, sizeof(totalSize));
+        write(socket, &totalSize, sizeof(totalSize));
 
         if (totalSize > 0)
         {
@@ -195,7 +206,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
 }
 
 
-int receiveFile(char* fileName,int file_size, int socket)
+int receiveFile(char* fileName, int socket)
 {
 	clock_t time = 0;
 	int maxTransUnit = 1240;
@@ -203,8 +214,7 @@ int receiveFile(char* fileName,int file_size, int socket)
     char segment[1240] = {0};
 	char str[80];
 	//fileName[0] = 'R';
-	totalSize = file_size;
-    //read(socket, &totalSize, sizeof(totalSize));
+    read(socket, &totalSize, sizeof(totalSize));
     if(totalSize <= 0) 
     {
         printf("Partner response with file size = 0 \n");

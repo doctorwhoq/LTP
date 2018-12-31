@@ -28,7 +28,7 @@ const char* SYNREQ = "REQ_TO_SYNC";
 const int SYNREQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12;
 const char* DOWNREQ = "REQ_TO_DOWN"; 
-const int SYN_TIME = 60 ;
+const int SYN_TIME = 10 ;
 
 
 void *handleIncomingFileTransfer(void * socketInfo);
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
     // Run backgroud Synchronize 
     pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
-    pthread_create(&downloadThread,NULL,&downloadFile,NULL);
+    //pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
 
 
@@ -189,7 +189,8 @@ void *synchronizeFolder()
         if(time_taken > SYN_TIME*2 )
         {
             time1 = clock();
-            printf("Updating ..%d\n",++updateCount);
+            updateCount= updateCount+ 1;
+            printf("----->Updating ..%d\n",updateCount);
             // update file list into index file
             f = fopen(LIST_FILE,"w");
             if(f == NULL){
@@ -211,6 +212,10 @@ void *synchronizeFolder()
                     fprintf(f,"%s\n",pDirent->d_name);
                 }   
             }
+            fclose(f);
+            closedir (pDir);   
+
+
             //Connect and update index file to server
             int socketToUpdate;
             if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0){
@@ -220,11 +225,22 @@ void *synchronizeFolder()
             else {
                 printf("Updating to Server in process \n");
             }
-             printf("%d**\n",write(socketToUpdate,SYNREQ,SYNREQ_SIZE));
+            printf("%d**\n",write(socketToUpdate,SYNREQ,SYNREQ_SIZE));
+            char *updateVer = "1.1";
+            //updateVer[2] = (char) updateCount;
+            printf("%d@@", write(socketToUpdate,updateVer,4));
+            //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
+            
+            if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
+                printf(" Update to server failed , thread stopped\n");
+                return;
+            }
+            else{
+                printf("Update to server successful\n");
+            }
             
             close(socketToUpdate);
-            fclose(f);
-            closedir (pDir);    
+             
             
         }
         time2 = clock();
@@ -290,10 +306,10 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         char cwd[100];      
         if (getcwd(cwd, sizeof(cwd)) != NULL) 
         {
-            //printf("Current working dir: %s\n", cwd);
+            printf("Current working dir: %s\n", cwd);
         } else 
         {
-            //perror(" dkm xa hoigetcwd() error");
+            perror(" dkm xa hoigetcwd() error");
             return 0;
         }
         //perror(" fopen ");
@@ -304,12 +320,14 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
     }
     else 
     {
+        //printf("FUCKFUCK");
         fseek(file, 0L, SEEK_END);
         totalSize = ftell(file);
-        //write(socket, &totalSize, sizeof(totalSize));
+        write(socket, &totalSize, sizeof(totalSize));
         fclose(file);
         if (totalSize > 0)
         {
+            //printf("FUck");
             file = fopen(fileName, "r");
             while (sizeof(segment) <= maxTransUnit)
             {
@@ -322,6 +340,10 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
             fclose(file);
             return 1;
         }
+        else {
+            printf("%s has size = %d\n",fileName,totalSize);
+            return 0;
+        }
     }
     return 1;
 }
@@ -332,8 +354,8 @@ int receiveFile(char* fileName,int file_size, int socket){
     char segment[1240] = {0};
 	char str[80];
 	//fileName[0] = 'R';
-	totalSize = file_size;
-    //read(socket, &totalSize, sizeof(totalSize));
+
+    read(socket, &totalSize, sizeof(totalSize));
     if(totalSize <= 0) {
         printf("Partner response with file size = 0 \n");
         return 0;
