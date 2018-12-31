@@ -67,6 +67,8 @@ int main()
 
     int* acceptedSocket;
      /* accepting new connections*/
+
+    
     while(1)
     {
 
@@ -273,6 +275,24 @@ int receiveFile(char* fileName, int socket)
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
         printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
+        fclose(file);
+
+        file = fopen(fileName, "r");
+        if(file == NULL)
+        {
+            printf("Cannot open client file update");
+        }
+
+        printf("\nNoi dung file client gui len:\n\n");
+        char *line = NULL;
+        size_t len = 0;
+        ssize_t read;
+        while ((read = getline(&line, &len, file)) != -1) 
+        {
+        //printf("Retrieved line of length %zu:\n", read);
+            printf("%s", line);
+        }
+
         fclose(file);
         return 1;
     }

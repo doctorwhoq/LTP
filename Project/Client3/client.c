@@ -40,7 +40,7 @@ void *handleIncomingFileTransfer(void * socketInfo);
 void *synchronizeFolder();
 void *downloadFile();
 
-
+pthread_mutex_t lock;
 
 int main(int argc, char *argv[])
 {
@@ -66,6 +66,9 @@ int main(int argc, char *argv[])
     thisHost.sin_port = htons(BIND_PORT_CLIENT_3);
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
+
+    printf("\n------Xin chao, day la chuong trinh gui va nhan file giua cac peer----");
+    printf("\n----Chuong trinh se tu dong update danh sach chia se file len server moi 60s----");
    
     if(fileTransferSocket < 0 )
     {
@@ -89,7 +92,7 @@ int main(int argc, char *argv[])
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
-        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_3);
+        printf("\n-----------Client %s  : UP and RUNNING ! -------------\n---------------Listening on %d----------------\n",hostName,BIND_PORT_CLIENT_3);
     }
     else
         printf("Error on listening \n");
@@ -115,10 +118,6 @@ int main(int argc, char *argv[])
 
         pthread_create(&fileTransferThread, NULL ,&handleIncomingFileTransfer,(void *)transferSocket);
     }
-
-
-
-
 
     
     /*
@@ -175,7 +174,7 @@ int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
 void *handleIncomingFileTransfer(void *socketInfo)
 {
     pthread_detach(pthread_self());
-    printf("Thread created id %ld for handling requesting data ^^^^^^\n \n",pthread_self());
+    //printf("Thread created id %ld for handling requesting data ^^^^^^\n \n",pthread_self());
     int i;
     int socketId = *((int *)socketInfo);
     char buffer[DEFAULT_NAME_SIZE];
@@ -193,7 +192,7 @@ void *handleIncomingFileTransfer(void *socketInfo)
 void *synchronizeFolder()
 {
     pthread_detach(pthread_self());
-    printf("Thread created id %ld for synchronizing data\n \n",pthread_self());
+    //printf("Thread created id %ld for synchronizing data\n \n",pthread_self());
     struct dirent *pDirent;
     DIR *pDir;
     char cwd[100]; 
@@ -211,7 +210,7 @@ void *synchronizeFolder()
         {
             time1 = clock();
             updateCount= updateCount+ 1;
-            printf("----->Updating ..%d\n",updateCount);
+            //printf("----->Updating ..%d\n",updateCount);
             // update file list into index file
             f = fopen(LIST_FILE,"w");
             if(f == NULL){
@@ -226,10 +225,14 @@ void *synchronizeFolder()
             //getcwd(cwd, sizeof(cwd));
             // printf("Current working directory %s/%s\n",cwd,LOCAL_FILE);
             // Listing files 
-            while ((pDirent = readdir(pDir)) != NULL) {
-                if((strcmp(pDirent->d_name,".")==0 || strcmp(pDirent->d_name,"..")==0 || (*pDirent->d_name) == '.' )){
+            while ((pDirent = readdir(pDir)) != NULL) 
+            {
+                if((strcmp(pDirent->d_name,".")==0 || strcmp(pDirent->d_name,"..")==0 || (*pDirent->d_name) == '.' ))
+                {
                     continue;
-                }else{
+                }
+                else
+                {
                     fprintf(f,"%s\n",pDirent->d_name);
                 }   
             }
@@ -239,27 +242,28 @@ void *synchronizeFolder()
 
             //Connect and update index file to server
             int socketToUpdate;
-            if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0){
-                printf("Update stopped . Server couldnt respond \n");
+            if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0)
+            {
+                printf("Update stopped . Server couldn't respond \n");
                 return;
             }
             else {
-                printf("Updating to Server in process \n");
+                //printf("Updating to Server in process \n");
             }
             write(socketToUpdate,SYNREQ,REQ_SIZE);
 
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
-             write(socketToUpdate,&updateCount,sizeof(int));
-             write(socketToUpdate,&BIND_PORT_CLIENT_3,sizeof(BIND_PORT_CLIENT_3));
+            write(socketToUpdate,&updateCount,sizeof(int));
+            write(socketToUpdate,&BIND_PORT_CLIENT_3,sizeof(BIND_PORT_CLIENT_3));
             //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
-                printf(" Update to server failed , thread stopped\n");
+                printf("Update to server failed , thread stopped\n");
                 return;
             }
             else{
-                printf("Update to server successful\n");
+                //printf("Update to server successful\n");
             }
             
             close(socketToUpdate);
@@ -277,13 +281,13 @@ void *synchronizeFolder()
 void *downloadFile()
 {
     pthread_detach(pthread_self());
-    printf("Thread created id %ld for downloading data\n \n",pthread_self());
+    //printf("Thread created id %ld for downloading data\n \n",pthread_self());
     int socketToSearch;
     if(connectToServerFunction(&socketToSearch,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
         return ;
     } else {
-         printf("IndexServer Connected\n");
+         printf("\n----------IndexServer Connected-----------\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
     write(socketToSearch,DOWNREQ,DOWNREQ_SIZE);
@@ -298,7 +302,8 @@ void *downloadFile()
     while(1)
     {
         //ENter file name so that server can search for it
-		printf("------Enter the file name to download : \n" ) ;
+        pthread_mutex_lock (&lock);
+		printf("\n------Enter the file name to download-------- : \n") ;
 		fflush(stdin);
 		scanf("%s",&selection);
 		if('\n' == selection[strlen(selection) - 1]) //remove \n
@@ -306,6 +311,7 @@ void *downloadFile()
 		if(strcmp(selection,"QUIT") == 0)
 			break;
 		printf(" You entered :  %s \n",selection);
+
         int sentBytes = send(socketToSearch,selection,DEFAULT_NAME_SIZE,0);
         
         // get search result from server 
@@ -345,6 +351,7 @@ void *downloadFile()
                 printf("File empty \n");
             }    
         }
+        pthread_mutex_unlock (&lock);
         
        
     }
