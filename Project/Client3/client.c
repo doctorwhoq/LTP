@@ -171,7 +171,17 @@ int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
 void *handleIncomingFileTransfer(void *socketInfo)
 {
     pthread_detach(pthread_self());
-    printf("Thread created id %ld for handling requesting data\n \n",pthread_self());
+    printf("Thread created id %ld for handling requesting data ^^^^^^\n \n",pthread_self());
+    int i;
+    int socketId = *((int *)socketInfo);
+    char buffer[DEFAULT_NAME_SIZE];
+    bzero(buffer, sizeof(buffer));
+    int readResult = read(socketId,buffer,sizeof(buffer));
+    char temp[40];
+    strcpy(temp,LOCAL_FILE);
+    strcat(temp,buffer);
+    sendFile(temp,socketId);
+    printf("File sent");
     return NULL;
 }
 
@@ -304,13 +314,17 @@ void *downloadFile()
         printf("New target to download file %s-%d\n",desIp,desPort);
         // new Target machine aquired, connecting 
         int socketToDownload;
-        int fuckthis;
-        if(connectToServerFunction(&fuckthis,desIp,desPort) < 0){
+        
+        if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
             printf("Connect to target machine failed , trying...\n");
         }
         else {
             printf("Connected\n");
-            
+            write(socketToDownload,selection,sizeof(selection));
+            char temp2[40];
+            strcpy(temp2,LOCAL_FILE);
+            strcat(temp2,selection);
+            receiveFile(selection,socketToDownload);
         }
         
        

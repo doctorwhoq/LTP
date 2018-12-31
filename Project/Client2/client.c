@@ -15,7 +15,7 @@
 
 
 
-const int BIND_PORT_CLIENT_2 = 12000;
+const int BIND_PORT_CLIENT_3 = 12000;
 const int DEFAULT_SIZE = 1024;
 const int DEFAULT_NAME_SIZE = 30;
 const int DEFAULT_LENGTH = 20;
@@ -54,18 +54,19 @@ int main(int argc, char *argv[])
     struct sockaddr_in thisHost;
     struct sockaddr_in requestingHost;
     socklen_t addr_size ;
-    int *transferSocket;
+    addr_size = sizeof(thisHost);;
+    int* transferSocket;
 
     //Address binding preparation
-
+     fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
     thisHost.sin_family =  AF_INET;
-    thisHost.sin_port = BIND_PORT_CLIENT_2;
+    thisHost.sin_port = htons(BIND_PORT_CLIENT_3);
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
-    fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
+   
     if(fileTransferSocket < 0 )
     {
-        printf("Error creating socket %d \n ", BIND_PORT_CLIENT_2);
+        printf("Error creating socket %d \n ", BIND_PORT_CLIENT_3);
     }
     int enable = 1;
     if (setsockopt(fileTransferSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int)) < 0)
@@ -85,7 +86,7 @@ int main(int argc, char *argv[])
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
-        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_2);
+        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_3);
     }
     else
         printf("Error on listening \n");
@@ -162,12 +163,25 @@ int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
     server_address_size = sizeof(indexServerAddr);
     // Connect to server
     connectStatus = connect(*socketToUpdate,(struct sockaddr *)&indexServerAddr,server_address_size);
+    if(connectStatus < 0){
+        perror("Socket Error : ");
+    }
     return connectStatus;
 }
 void *handleIncomingFileTransfer(void *socketInfo)
 {
     pthread_detach(pthread_self());
-    printf("Thread created id %ld for handling requesting data\n \n",pthread_self());
+    printf("Thread created id %ld for handling requesting data ^^^^^^\n \n",pthread_self());
+    int i;
+    int socketId = *((int *)socketInfo);
+    char buffer[DEFAULT_NAME_SIZE];
+    bzero(buffer, sizeof(buffer));
+    int readResult = read(socketId,buffer,sizeof(buffer));
+    char temp[40];
+    strcpy(temp,LOCAL_FILE);
+    strcat(temp,buffer);
+    sendFile(temp,socketId);
+    printf("File sent");
     return NULL;
 }
 
@@ -232,7 +246,7 @@ void *synchronizeFolder()
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
              write(socketToUpdate,&updateCount,sizeof(int));
-             write(socketToUpdate,&BIND_PORT_CLIENT_2,sizeof(BIND_PORT_CLIENT_2));
+             write(socketToUpdate,&BIND_PORT_CLIENT_3,sizeof(BIND_PORT_CLIENT_3));
             //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
@@ -260,9 +274,6 @@ void *downloadFile()
     pthread_detach(pthread_self());
     printf("Thread created id %ld for downloading data\n \n",pthread_self());
     int socketToSearch;
-    struct sockaddr_in indexServerAddr; 
-    socklen_t server_address_size;
-    int connectStatus;
     if(connectToServerFunction(&socketToSearch,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
         return ;
@@ -303,11 +314,17 @@ void *downloadFile()
         printf("New target to download file %s-%d\n",desIp,desPort);
         // new Target machine aquired, connecting 
         int socketToDownload;
+        
         if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
             printf("Connect to target machine failed , trying...\n");
         }
         else {
             printf("Connected\n");
+            write(socketToDownload,selection,sizeof(selection));
+            char temp2[40];
+            strcpy(temp2,LOCAL_FILE);
+            strcat(temp2,selection);
+            receiveFile(selection,socketToDownload);
         }
         
        
