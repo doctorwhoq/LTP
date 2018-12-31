@@ -54,15 +54,16 @@ int main(int argc, char *argv[])
     struct sockaddr_in thisHost;
     struct sockaddr_in requestingHost;
     socklen_t addr_size ;
-    int *transferSocket;
+    addr_size = sizeof(thisHost);;
+    int* transferSocket;
 
     //Address binding preparation
-
+     fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
     thisHost.sin_family =  AF_INET;
-    thisHost.sin_port = BIND_PORT_CLIENT_3;
+    thisHost.sin_port = htons(BIND_PORT_CLIENT_3);
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
-    fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
+   
     if(fileTransferSocket < 0 )
     {
         printf("Error creating socket %d \n ", BIND_PORT_CLIENT_3);
@@ -162,6 +163,9 @@ int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
     server_address_size = sizeof(indexServerAddr);
     // Connect to server
     connectStatus = connect(*socketToUpdate,(struct sockaddr *)&indexServerAddr,server_address_size);
+    if(connectStatus < 0){
+        perror("Socket Error : ");
+    }
     return connectStatus;
 }
 void *handleIncomingFileTransfer(void *socketInfo)
@@ -260,9 +264,6 @@ void *downloadFile()
     pthread_detach(pthread_self());
     printf("Thread created id %ld for downloading data\n \n",pthread_self());
     int socketToSearch;
-    struct sockaddr_in indexServerAddr; 
-    socklen_t server_address_size;
-    int connectStatus;
     if(connectToServerFunction(&socketToSearch,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
         return ;
@@ -303,11 +304,13 @@ void *downloadFile()
         printf("New target to download file %s-%d\n",desIp,desPort);
         // new Target machine aquired, connecting 
         int socketToDownload;
-        if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
+        int fuckthis;
+        if(connectToServerFunction(&fuckthis,desIp,desPort) < 0){
             printf("Connect to target machine failed , trying...\n");
         }
         else {
             printf("Connected\n");
+            
         }
         
        
