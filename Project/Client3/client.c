@@ -259,18 +259,18 @@ void *downloadFile()
 {
     pthread_detach(pthread_self());
     printf("Thread created id %ld for downloading data\n \n",pthread_self());
-    int socketToDownload;
+    int socketToSearch;
     struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
     int connectStatus;
-    if(connectToServerFunction(&socketToDownload,INDEX_HOST,INDEX_PORT) < 0 ){
+    if(connectToServerFunction(&socketToSearch,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
         return ;
     } else {
          printf("IndexServer Connected\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
-    printf("%d**",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
+    printf("%d**",write(socketToSearch,DOWNREQ,DOWNREQ_SIZE));
     time_t time1 = clock();
     time_t time2 = clock();
     //char buffer[15];
@@ -281,6 +281,7 @@ void *downloadFile()
     bzero(selection, sizeof(selection));
     while(1)
     {
+        //ENter file name so that server can search for it
 		printf("------Enter the file name to download : \n" ) ;
 		fflush(stdin);
 		scanf("%s",&selection);
@@ -289,19 +290,26 @@ void *downloadFile()
 		if(strcmp(selection,"QUIT") == 0)
 			break;
 		printf(" You entered :  %s \n",selection);
-        int sentBytes = send(socketToDownload,selection,DEFAULT_NAME_SIZE,0);
+        int sentBytes = send(socketToSearch,selection,DEFAULT_NAME_SIZE,0);
+        // get search result from server 
         char result[40];
         bzero(result,sizeof(result));
         strcpy(result,SEARCH_RES);
         strcat(result,selection);
-        receiveFile(result,socketToDownload);
-        char IP[DEFAULT_NAME_SIZE];
-        bzero(IP,sizeof(IP));
-        int desPort = getPeerAddr(result,&IP);
-        printf("New target to download file %s-%d\n",IP,desPort);
-        //write(socketToDownload,&i,sizeof(i));
-        //write(socketToDownload,"Hello \n",50);
-        //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
+        receiveFile(result,socketToSearch);
+        //char desIp[DEFAULT_NAME_SIZE];
+        char* desIp;
+        int desPort = getPeerAddr(result,&desIp);
+        printf("New target to download file %s-%d\n",desIp,desPort);
+        // new Target machine aquired, connecting 
+        int socketToDownload;
+        if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
+            printf("Connect to target machine failed , trying...\n");
+        }
+        else {
+            printf("Connected\n");
+        }
+        
        
     }
     /*char *addr;
@@ -421,10 +429,12 @@ int getPeerAddr(char *peerHasFile, char **addr)
     }
 
     *addr = strtok(line, ":");
-    printf("%s!!!",*addr);
+    
     portChar = strtok(NULL, ":");
     portChar = strtok(portChar, ".");
     port = atoi(portChar);
+    fclose(fp);
+   // printf("%s***\n",*addr);
     return port;
 
 }

@@ -15,8 +15,9 @@
 
 
 
-const int BIND_PORT_CLIENT_1 = 12000;
+const int BIND_PORT_CLIENT_2 = 12000;
 const int DEFAULT_SIZE = 1024;
+const int DEFAULT_NAME_SIZE = 30;
 const int DEFAULT_LENGTH = 20;
 const char* INDEX_HOST =  "192.168.0.100";
 const int INDEX_PORT = 15000;
@@ -24,6 +25,7 @@ const char* LOCAL_FILE = "Public/";
 const char* LIST_FILE = "index.txt";
 const int MAX_CONNECTING_CLIENTS = 5;
 const char* CLIENT_NAME = "Client number ";
+const char* SEARCH_RES = "SearchResult:";
 const char* SYNREQ = "REQ_TO_SYNC";
 const int SYNREQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12;
@@ -57,13 +59,13 @@ int main(int argc, char *argv[])
     //Address binding preparation
 
     thisHost.sin_family =  AF_INET;
-    thisHost.sin_port = BIND_PORT_CLIENT_1;
+    thisHost.sin_port = BIND_PORT_CLIENT_2;
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
     fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
     if(fileTransferSocket < 0 )
     {
-        printf("Error creating socket %d \n ", BIND_PORT_CLIENT_1);
+        printf("Error creating socket %d \n ", BIND_PORT_CLIENT_2);
     }
     int enable = 1;
     if (setsockopt(fileTransferSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int)) < 0)
@@ -83,7 +85,7 @@ int main(int argc, char *argv[])
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
-        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_1);
+        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_2);
     }
     else
         printf("Error on listening \n");
@@ -92,7 +94,7 @@ int main(int argc, char *argv[])
     // Run backgroud Synchronize 
     pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
-    //pthread_create(&downloadThread,NULL,&downloadFile,NULL);
+    pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
 
 
@@ -226,9 +228,11 @@ void *synchronizeFolder()
                 printf("Updating to Server in process \n");
             }
             write(socketToUpdate,SYNREQ,SYNREQ_SIZE);
+
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
              write(socketToUpdate,&updateCount,sizeof(int));
+             write(socketToUpdate,&BIND_PORT_CLIENT_2,sizeof(BIND_PORT_CLIENT_2));
             //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
@@ -255,33 +259,57 @@ void *downloadFile()
 {
     pthread_detach(pthread_self());
     printf("Thread created id %ld for downloading data\n \n",pthread_self());
-    int socketToDownload;
+    int socketToSearch;
     struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
     int connectStatus;
-    if(connectToServerFunction(&socketToDownload,INDEX_HOST,INDEX_PORT) < 0 ){
+    if(connectToServerFunction(&socketToSearch,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
         return ;
     } else {
          printf("IndexServer Connected\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
-    printf("%d**",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
+    printf("%d**",write(socketToSearch,DOWNREQ,DOWNREQ_SIZE));
     time_t time1 = clock();
     time_t time2 = clock();
     //char buffer[15];
-    char buffer[50];
-    bzero(buffer, sizeof(buffer));
-    int i;
 
+    
+    int i;
+    char selection[DEFAULT_NAME_SIZE];
+    bzero(selection, sizeof(selection));
     while(1)
     {
+        //ENter file name so that server can search for it
+		printf("------Enter the file name to download : \n" ) ;
+		fflush(stdin);
+		scanf("%s",&selection);
+		if('\n' == selection[strlen(selection) - 1]) //remove \n
+				selection[strlen(selection) - 1] = '\0';
+		if(strcmp(selection,"QUIT") == 0)
+			break;
+		printf(" You entered :  %s \n",selection);
+        int sentBytes = send(socketToSearch,selection,DEFAULT_NAME_SIZE,0);
+        // get search result from server 
+        char result[40];
+        bzero(result,sizeof(result));
+        strcpy(result,SEARCH_RES);
+        strcat(result,selection);
+        receiveFile(result,socketToSearch);
+        //char desIp[DEFAULT_NAME_SIZE];
+        char* desIp;
+        int desPort = getPeerAddr(result,&desIp);
+        printf("New target to download file %s-%d\n",desIp,desPort);
+        // new Target machine aquired, connecting 
+        int socketToDownload;
+        if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
+            printf("Connect to target machine failed , trying...\n");
+        }
+        else {
+            printf("Connected\n");
+        }
         
-        printf("Ready Upload list to Server, enter code \n");
-        scanf("%d",&i);
-        write(socketToDownload,&i,sizeof(i));
-        //write(socketToDownload,"Hello \n",50);
-        //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
        
     }
     /*char *addr;
@@ -292,7 +320,6 @@ void *downloadFile()
     printf("\n%d", port);*/
     return NULL;
 }
-
 
 int sendFile(char* fileName, int socket) // has sent file_size b4
 {
@@ -347,19 +374,23 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
     }
     return 1;
 }
-int receiveFile(char* fileName,int file_size, int socket){
+
+int receiveFile(char* fileName, int socket)
+{
 	clock_t time = 0;
 	int maxTransUnit = 1240;
 	int size = 0, totalSize = 0;
     char segment[1240] = {0};
 	char str[80];
 	//fileName[0] = 'R';
-
     read(socket, &totalSize, sizeof(totalSize));
-    if(totalSize <= 0) {
+    if(totalSize <= 0) 
+    {
         printf("Partner response with file size = 0 \n");
         return 0;
-    } else {
+    } 
+    else 
+    {
 		
         FILE *file = fopen(fileName, "w");
 		time = clock();
@@ -372,11 +403,12 @@ int receiveFile(char* fileName,int file_size, int socket){
         }
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
-        printf("Received %d bytes in %lf seconds \n\n\n\n",size, time_taken);
+        printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
         fclose(file);
         return 1;
     }
 }
+
 int getPeerAddr(char *peerHasFile, char **addr)
 {
     char *portChar;
@@ -397,9 +429,12 @@ int getPeerAddr(char *peerHasFile, char **addr)
     }
 
     *addr = strtok(line, ":");
+    
     portChar = strtok(NULL, ":");
     portChar = strtok(portChar, ".");
     port = atoi(portChar);
+    fclose(fp);
+   // printf("%s***\n",*addr);
     return port;
 
 }
