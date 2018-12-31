@@ -139,10 +139,11 @@ int main(int argc, char *argv[])
     */
     return 0;
 }
-int connectToServer(int* socketToUpdate,struct sockaddr_in indexServerAddr)
+int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
 {
-   
+    struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
+    
     int connectStatus;
     // allocation of socket 
 
@@ -156,8 +157,8 @@ int connectToServer(int* socketToUpdate,struct sockaddr_in indexServerAddr)
     }
     // Create target server IPv4, TCP, PORT ,IP ADDRESS     
     indexServerAddr.sin_family = AF_INET;
-    indexServerAddr.sin_port = htons(INDEX_PORT);
-    indexServerAddr.sin_addr.s_addr = inet_addr(INDEX_HOST);
+    indexServerAddr.sin_port = htons(port);
+    indexServerAddr.sin_addr.s_addr = inet_addr(serverAddress);
     server_address_size = sizeof(indexServerAddr);
     // Connect to server
     connectStatus = connect(*socketToUpdate,(struct sockaddr *)&indexServerAddr,server_address_size);
