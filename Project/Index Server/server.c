@@ -23,6 +23,7 @@ const char* DOWNREQ = "REQ_TO_DOWN";
 const char* SERVER_PEER_SHARE = "./peerShare/";
 const int SYNREQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12; 
+const char* SEARCH_RES = "SearchResult:";
 void * handleSynThread(void *);
 void * handleReqThread(void *);
 void saveClientAddr(const char *fileName, char *addr, char* port);
@@ -117,6 +118,7 @@ void *handleSynThread(void *socketInfo)
     //itoa(port,clientPublicPort,10);
     saveClientAddr(clientFileName,ipstr,clientPublicPort);
     char temp[40];
+    bzero(temp,sizeof(temp));
     strcpy(temp,SERVER_PEER_SHARE);
     strcat(temp,clientFileName);
     strcpy(clientFileName,temp);
@@ -157,6 +159,17 @@ void * handleReqThread(void *socketInfo)
         }
         //receiveFile("ClientIndexfile.txt",20,socketId);
         printf("+++++Client has requested %s::\n", buffer);
+        if(createSearchResultFile(buffer) == 1){
+            printf("File found");
+            char result[40];
+            bzero(result,sizeof(result));
+            strcpy(result,SEARCH_RES);
+            strcat(result,buffer);
+            sendFile(result,socketId);
+        }
+        else {
+            printf("File not found ");
+        }
         
     }
     close(socketId);
@@ -214,6 +227,10 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
             fclose(file);
             return 1;
         }
+         else {
+            printf("%s has size = %d\n",fileName,totalSize);
+            return 0;
+        }
     }
     return 1;
 }
@@ -254,15 +271,19 @@ int receiveFile(char* fileName, int socket)
 }
 
 
-void createSearchResultFile(char fileName[])
+int createSearchResultFile(char fileName[])
 {
     //int fd = *(int *)sockfd;
+    int found = 0;
     FILE* peerHasFileList,*fcheck;
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
-
-    peerHasFileList = fopen("resultFile.txt", "w");
+    char result[40];
+    bzero(result,sizeof(result));
+    strcpy(result,SEARCH_RES);
+    strcat(result,fileName);
+    peerHasFileList = fopen(result, "w");
 	fflush(peerHasFileList);
     if(peerHasFileList == NULL)
 	{
@@ -309,12 +330,16 @@ void createSearchResultFile(char fileName[])
             {
                 while ((read = getline(&line, &len, fcheck)) != -1) 
                 {
-                    printf("%s", line);
-                    
-                    if(strcmp(fileName, line)==0)
+                    //printf("%s", line);
+                    char temp[40];
+                    bzero(temp,sizeof(temp));
+                    strcpy(temp,fileName);
+                    strcat(temp,"\n");
+                    //printf("%s:%s:\n",fileName,line);
+                    if(strcmp(fileName, line)==0 || strcmp(temp,line) == 0)
                     {
-                        printf("%s\n", de->d_name);
-                        
+                        found = 1;
+                        printf("File has been found at : %s\n", de->d_name);
                         fprintf(peerHasFileList, "%s\n", de->d_name);	
                     }
                 }
@@ -327,6 +352,7 @@ void createSearchResultFile(char fileName[])
 	}  
     closedir(dr);   
 	fclose(peerHasFileList);
+    return found;
 
 }
 int getPeerAddr(char *peerHasFile, char **addr)
@@ -367,6 +393,5 @@ void saveClientAddr(const char *fileName, char *addr, char* port)
     strcat(fileName, ".txt");
     strcat(fileName, "\n");
     //strcat(fileName, '\0');
-
     return;
 }

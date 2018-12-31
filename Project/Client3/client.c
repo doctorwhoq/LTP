@@ -25,6 +25,7 @@ const char* LOCAL_FILE = "Public/";
 const char* LIST_FILE = "index.txt";
 const int MAX_CONNECTING_CLIENTS = 5;
 const char* CLIENT_NAME = "Client number ";
+const char* SEARCH_RES = "SearchResult:";
 const char* SYNREQ = "REQ_TO_SYNC";
 const int SYNREQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12;
@@ -289,7 +290,15 @@ void *downloadFile()
 			break;
 		printf(" You entered :  %s \n",selection);
         int sentBytes = send(socketToDownload,selection,DEFAULT_NAME_SIZE,0);
-
+        char result[40];
+        bzero(result,sizeof(result));
+        strcpy(result,SEARCH_RES);
+        strcat(result,selection);
+        receiveFile(result,socketToDownload);
+        char IP[DEFAULT_NAME_SIZE];
+        bzero(IP,sizeof(IP));
+        int desPort = getPeerAddr(result,&IP);
+        printf("New target to download file %s-%d\n",IP,desPort);
         //write(socketToDownload,&i,sizeof(i));
         //write(socketToDownload,"Hello \n",50);
         //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
@@ -357,19 +366,23 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
     }
     return 1;
 }
-int receiveFile(char* fileName,int file_size, int socket){
+
+int receiveFile(char* fileName, int socket)
+{
 	clock_t time = 0;
 	int maxTransUnit = 1240;
 	int size = 0, totalSize = 0;
     char segment[1240] = {0};
 	char str[80];
 	//fileName[0] = 'R';
-
     read(socket, &totalSize, sizeof(totalSize));
-    if(totalSize <= 0) {
+    if(totalSize <= 0) 
+    {
         printf("Partner response with file size = 0 \n");
         return 0;
-    } else {
+    } 
+    else 
+    {
 		
         FILE *file = fopen(fileName, "w");
 		time = clock();
@@ -382,11 +395,12 @@ int receiveFile(char* fileName,int file_size, int socket){
         }
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
-        printf("Received %d bytes in %lf seconds \n\n\n\n",size, time_taken);
+        printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
         fclose(file);
         return 1;
     }
 }
+
 int getPeerAddr(char *peerHasFile, char **addr)
 {
     char *portChar;
@@ -407,6 +421,7 @@ int getPeerAddr(char *peerHasFile, char **addr)
     }
 
     *addr = strtok(line, ":");
+    printf("%s!!!",*addr);
     portChar = strtok(NULL, ":");
     portChar = strtok(portChar, ".");
     port = atoi(portChar);
