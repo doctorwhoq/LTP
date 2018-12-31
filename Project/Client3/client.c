@@ -190,37 +190,39 @@ void *synchronizeFolder()
         {
             time1 = clock();
             printf("Updating ..%d\n",++updateCount);
-            
             // update file list into index file
             f = fopen(LIST_FILE,"w");
-            if(f == NULL)
-            {
+            if(f == NULL){
                 printf("Error opening file");
             }
             // Open folder
             pDir = opendir (LOCAL_FILE);
-            if (pDir == NULL) 
-            {
+            if (pDir == NULL) {
                 printf ("Cannot open directory '%s'\n", LOCAL_FILE);
                 return NULL;
             }
-            getcwd(cwd, sizeof(cwd));
-           // printf("Current working directory %s/%s\n",cwd,LOCAL_FILE);
+            //getcwd(cwd, sizeof(cwd));
+            // printf("Current working directory %s/%s\n",cwd,LOCAL_FILE);
             // Listing files 
-            while ((pDirent = readdir(pDir)) != NULL) 
-            {
-                if((strcmp(pDirent->d_name,".")==0 || strcmp(pDirent->d_name,"..")==0 || (*pDirent->d_name) == '.' ))
-                {
+            while ((pDirent = readdir(pDir)) != NULL) {
+                if((strcmp(pDirent->d_name,".")==0 || strcmp(pDirent->d_name,"..")==0 || (*pDirent->d_name) == '.' )){
                     continue;
-                }
-                else
-                {
+                }else{
                     fprintf(f,"%s\n",pDirent->d_name);
-                }
-                    
-                
+                }   
             }
+            //Connect and update index file to server
+            int socketToUpdate;
+            if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0){
+                printf("Update stopped . Server couldnt respond \n");
+                return;
+            }
+            else {
+                printf("Updating to Server in process \n");
+            }
+             printf("%d**\n",write(socketToUpdate,SYNREQ,SYNREQ_SIZE));
             
+            close(socketToUpdate);
             fclose(f);
             closedir (pDir);    
             
@@ -248,7 +250,7 @@ void *downloadFile()
          printf("IndexServer Connected\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
-    printf("%d",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
+    printf("%d**",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
     time_t time1 = clock();
     time_t time2 = clock();
     //char buffer[15];

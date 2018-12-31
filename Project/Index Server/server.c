@@ -87,7 +87,7 @@ int main()
         char buffer[40];
         bzero(buffer,sizeof(buffer));
         int cout =read(*acceptedSocket,buffer,sizeof(buffer));  
-        printf("%s**%d\n",buffer,cout);
+        printf("Current Request : %s\n",buffer);
           
         if(strcmp(buffer,SYNREQ) == 0){
             pthread_create(&synThread, NULL ,&handleSynThread,(void *)acceptedSocket);
@@ -102,6 +102,7 @@ int main()
 
 void *handleSynThread(void *socketInfo)
 {
+    pthread_detach(pthread_self());
     printf("New thread created for Synchronizing \n");
     
     return NULL;
