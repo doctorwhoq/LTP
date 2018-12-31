@@ -17,6 +17,10 @@ const char* INDEX_HOST = "192.168.0.100";
 const int DEFAULT_SIZE = 1024;
 const int DEFAULT_LENGTH = 20;
 const int MAX_CLIENTS = 5;
+const char* SYNREQ = "REQ_TO_SYNC";
+const char* DOWNREQ = "REQ_TO_DOWN";
+const int SYNREQ_SIZE = 12;
+const int DOWNREQ_SIZE = 12; 
 void * handleSynThread(void *);
 void * handleReqThread(void *);
 
@@ -79,11 +83,16 @@ int main()
         *acceptedSocket = accept(listenSock, (struct sockaddr *) &clientAddr, &addr_size);
         if (errno == EINTR) continue;
             else;// perror("accept error");
-        printf("New connection accepted\n");    
-        if(1){
+        printf("New connection accepted\n");
+        char buffer[40];
+        bzero(buffer,sizeof(buffer));
+        int cout =read(*acceptedSocket,buffer,sizeof(buffer));  
+        printf("%s**%d\n",buffer,cout);
+          
+        if(strcmp(buffer,SYNREQ) == 0){
             pthread_create(&synThread, NULL ,&handleSynThread,(void *)acceptedSocket);
         }
-        else{
+        else if ( strcmp(buffer,DOWNREQ) == 0) {
             pthread_create(&reqThread, NULL ,&handleReqThread,(void *)acceptedSocket);
         }    
          
@@ -94,6 +103,13 @@ int main()
 void *handleSynThread(void *socketInfo)
 {
     printf("New thread created for Synchronizing \n");
+    
+    return NULL;
+}
+
+void * handleReqThread(void *socketInfo)
+{
+    printf("New thread created for Handling Requests\n");
     pthread_detach(pthread_self());
     
     int i;
@@ -115,18 +131,12 @@ void *handleSynThread(void *socketInfo)
             //fix client ctrl+c or buffer = ""
         }
         receiveFile("ClientIndexfile.txt",20,socketId);
-        printf("%d Sent code", i);
+        printf("%d Sent code\n", i);
         
     }
     close(socketId);
     printf("Thread exited\n");
     free(socketInfo);
-    return ;
-}
-
-void * handleReqThread(void *socketInfo)
-{
-    printf("Handle Req Thread");
     return NULL;
 }
 

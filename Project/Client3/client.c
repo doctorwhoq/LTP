@@ -24,6 +24,10 @@ const char* LOCAL_FILE = "Public/";
 const char* LIST_FILE = "index.txt";
 const int MAX_CONNECTING_CLIENTS = 5;
 const char* CLIENT_NAME = "Client number ";
+const char* SYNREQ = "REQ_TO_SYNC";
+const int SYNREQ_SIZE = 12;
+const int DOWNREQ_SIZE = 12;
+const char* DOWNREQ = "REQ_TO_DOWN"; 
 const int SYN_TIME = 60 ;
 
 
@@ -86,7 +90,7 @@ int main(int argc, char *argv[])
 
 
     // Run backgroud Synchronize 
-    //pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
+    pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
     pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
@@ -217,6 +221,7 @@ void *synchronizeFolder()
                     
                 
             }
+            
             fclose(f);
             closedir (pDir);    
             
@@ -257,7 +262,8 @@ void *downloadFile()
         printf("Connect failed \n");
     else 
         printf("IndexServer Connected\n");
-
+   // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
+    printf("%d",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
     time_t time1 = clock();
     time_t time2 = clock();
     //char buffer[15];
@@ -275,7 +281,12 @@ void *downloadFile()
         printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
        
     }
+    /*char *addr;
+    int port;
     
+    port = getPeerAddr("test.txt",&addr);
+    printf("\n%s", addr);
+    printf("\n%d", port);*/
     return NULL;
 }
 
@@ -357,6 +368,31 @@ int receiveFile(char* fileName,int file_size, int socket){
         return 1;
     }
 }
+int getPeerAddr(char *peerHasFile, char **addr)
+{
+    char *portChar;
+    int port=0;
+    FILE *fp = fopen(peerHasFile, "r");
+    if(fp == NULL)
+    {
+        printf("fopen failed\n\n");
+    }
+    char * getFirstPeerAddr = NULL;
 
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    if((read = getline(&line, &len, fp)) != -1)
+    {
+        //printf("%s", line);
+    }
+
+    *addr = strtok(line, ":");
+    portChar = strtok(NULL, ":");
+    portChar = strtok(portChar, ".");
+    port = atoi(portChar);
+    return port;
+
+}
 
 
