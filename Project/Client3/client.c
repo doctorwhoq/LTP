@@ -15,8 +15,9 @@
 
 
 
-const int BIND_PORT_CLIENT_1 = 11000;
+const int BIND_PORT_CLIENT_3 = 11000;
 const int DEFAULT_SIZE = 1024;
+const int DEFAULT_NAME_SIZE = 30;
 const int DEFAULT_LENGTH = 20;
 const char* INDEX_HOST =  "192.168.0.100";
 const int INDEX_PORT = 15000;
@@ -57,13 +58,13 @@ int main(int argc, char *argv[])
     //Address binding preparation
 
     thisHost.sin_family =  AF_INET;
-    thisHost.sin_port = BIND_PORT_CLIENT_1;
+    thisHost.sin_port = BIND_PORT_CLIENT_3;
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
     fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
     if(fileTransferSocket < 0 )
     {
-        printf("Error creating socket %d \n ", BIND_PORT_CLIENT_1);
+        printf("Error creating socket %d \n ", BIND_PORT_CLIENT_3);
     }
     int enable = 1;
     if (setsockopt(fileTransferSocket, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int)) < 0)
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
-        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_1);
+        printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_3);
     }
     else
         printf("Error on listening \n");
@@ -92,7 +93,7 @@ int main(int argc, char *argv[])
     // Run backgroud Synchronize 
     pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
-    //pthread_create(&downloadThread,NULL,&downloadFile,NULL);
+    pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
 
 
@@ -226,9 +227,11 @@ void *synchronizeFolder()
                 printf("Updating to Server in process \n");
             }
             write(socketToUpdate,SYNREQ,SYNREQ_SIZE);
+
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
              write(socketToUpdate,&updateCount,sizeof(int));
+             write(socketToUpdate,&BIND_PORT_CLIENT_3,sizeof(BIND_PORT_CLIENT_3));
             //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
@@ -270,16 +273,24 @@ void *downloadFile()
     time_t time1 = clock();
     time_t time2 = clock();
     //char buffer[15];
-    char buffer[50];
-    bzero(buffer, sizeof(buffer));
-    int i;
 
+    
+    int i;
+    char selection[DEFAULT_NAME_SIZE];
+    bzero(selection, sizeof(selection));
     while(1)
     {
-        
-        printf("Ready Upload list to Server, enter code \n");
-        scanf("%d",&i);
-        write(socketToDownload,&i,sizeof(i));
+		printf("------Enter the file name to download : \n" ) ;
+		fflush(stdin);
+		scanf("%s",&selection);
+		if('\n' == selection[strlen(selection) - 1]) //remove \n
+				selection[strlen(selection) - 1] = '\0';
+		if(strcmp(selection,"QUIT") == 0)
+			break;
+		printf(" You entered :  %s \n",selection);
+        int sentBytes = send(socketToDownload,selection,DEFAULT_NAME_SIZE,0);
+
+        //write(socketToDownload,&i,sizeof(i));
         //write(socketToDownload,"Hello \n",50);
         //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
        
@@ -292,7 +303,6 @@ void *downloadFile()
     printf("\n%d", port);*/
     return NULL;
 }
-
 
 int sendFile(char* fileName, int socket) // has sent file_size b4
 {

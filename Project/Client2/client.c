@@ -23,8 +23,12 @@ const int INDEX_PORT = 15000;
 const char* LOCAL_FILE = "Public/";
 const char* LIST_FILE = "index.txt";
 const int MAX_CONNECTING_CLIENTS = 5;
-const char* CLIENT_NAME = "Client number 2 ";
-const int SYN_TIME = 60 ;
+const char* CLIENT_NAME = "Client number ";
+const char* SYNREQ = "REQ_TO_SYNC";
+const int SYNREQ_SIZE = 12;
+const int DOWNREQ_SIZE = 12;
+const char* DOWNREQ = "REQ_TO_DOWN"; 
+const int SYN_TIME = 10 ;
 
 
 void *handleIncomingFileTransfer(void * socketInfo);
@@ -33,7 +37,8 @@ void *downloadFile();
 
 
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[])
+{
     // Threading info
     pthread_t synchronizeThread;
     pthread_t fileTransferThread;
@@ -56,7 +61,8 @@ int main(int argc, char *argv[]){
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
     fileTransferSocket = socket(AF_INET,SOCK_STREAM,0);
-    if(fileTransferSocket < 0 ){
+    if(fileTransferSocket < 0 )
+    {
         printf("Error creating socket %d \n ", BIND_PORT_CLIENT_1);
     }
     int enable = 1;
@@ -67,38 +73,40 @@ int main(int argc, char *argv[]){
 
     //bind socket to all local interfaces 
     bind(fileTransferSocket,(struct sockaddr *)&thisHost, sizeof(thisHost));
-    if(listen(fileTransferSocket,MAX_CONNECTING_CLIENTS) == 0){
+    if(listen(fileTransferSocket,MAX_CONNECTING_CLIENTS) == 0)
+    {
         char hostName[20];
         //strcpy(hostName,CLIENT_NAME);
         //int hostNameLength;
-        if(gethostname(hostName,sizeof(hostName))){
+        if(gethostname(hostName,sizeof(hostName)))
+        {
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
         printf("Client %s  : UP and RUNNING ! \n Listening on %d \n",hostName,BIND_PORT_CLIENT_1);
     }
-    else {
+    else
         printf("Error on listening \n");
-    }
 
 
     // Run backgroud Synchronize 
-    //pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
+    pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
     // RUn background client waiting for dowloading data 
-    pthread_create(&downloadThread,NULL,&downloadFile,NULL);
+    //pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
 
 
     //Server preparation 
     addr_size = sizeof(requestingHost);
     // Going live as a server
-    while(1){
+    while(1)
+    {
         transferSocket = malloc(sizeof(int));
         *transferSocket = accept(fileTransferSocket,(struct sockaddr*)&requestingHost,&addr_size);
         if (errno == EINTR) continue;
-            else;// perror("accept error");
-        pthread_create(&fileTransferThread, NULL ,&handleIncomingFileTransfer,(void *)transferSocket);
+        else;// perror("accept error");
 
+        pthread_create(&fileTransferThread, NULL ,&handleIncomingFileTransfer,(void *)transferSocket);
     }
 
 
@@ -131,35 +139,38 @@ int main(int argc, char *argv[]){
     */
     return 0;
 }
-int connectToServer(int* socketToUpdate,struct sockaddr_in indexServerAddr){
-   
+int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
+{
+    struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
+    
     int connectStatus;
     // allocation of socket 
-
-    socketToUpdate = malloc(sizeof(int));
     // create a socket Ipv4, TCP , TCP'S protocol
     *socketToUpdate = socket(AF_INET,SOCK_STREAM,0);
     if(*socketToUpdate < 0 )
-        {
-            printf("Socket Creation Error \n");
-            exit(0);
-        }
+    {
+        printf("Socket Creation Error \n");
+        exit(0);
+    }
     // Create target server IPv4, TCP, PORT ,IP ADDRESS     
     indexServerAddr.sin_family = AF_INET;
-    indexServerAddr.sin_port = htons(INDEX_PORT);
-    indexServerAddr.sin_addr.s_addr = inet_addr(INDEX_HOST);
+    indexServerAddr.sin_port = htons(port);
+    indexServerAddr.sin_addr.s_addr = inet_addr(serverAddress);
     server_address_size = sizeof(indexServerAddr);
     // Connect to server
     connectStatus = connect(*socketToUpdate,(struct sockaddr *)&indexServerAddr,server_address_size);
     return connectStatus;
 }
-void *handleIncomingFileTransfer(void *socketInfo){
+void *handleIncomingFileTransfer(void *socketInfo)
+{
     pthread_detach(pthread_self());
     printf("Thread created id %ld for handling requesting data\n \n",pthread_self());
     return NULL;
 }
-void *synchronizeFolder(){
+
+void *synchronizeFolder()
+{
     pthread_detach(pthread_self());
     printf("Thread created id %ld for synchronizing data\n \n",pthread_self());
     struct dirent *pDirent;
@@ -171,20 +182,18 @@ void *synchronizeFolder(){
     double time_taken = 121;
     int updateCount = 0;
     // open Index file
-    while(1){
+    while(1)
+    {
         //continous updates of file    
-        
-       
         // update every minute 
-        if(time_taken > SYN_TIME*2 ){
-
+        if(time_taken > SYN_TIME*2 )
+        {
             time1 = clock();
-            printf("Updating ..%d\n",++updateCount);
-            
+            updateCount= updateCount+ 1;
+            printf("----->Updating ..%d\n",updateCount);
             // update file list into index file
             f = fopen(LIST_FILE,"w");
-            if(f == NULL)
-            {
+            if(f == NULL){
                 printf("Error opening file");
             }
             // Open folder
@@ -193,19 +202,45 @@ void *synchronizeFolder(){
                 printf ("Cannot open directory '%s'\n", LOCAL_FILE);
                 return NULL;
             }
-            getcwd(cwd, sizeof(cwd));
-           // printf("Current working directory %s/%s\n",cwd,LOCAL_FILE);
+            //getcwd(cwd, sizeof(cwd));
+            // printf("Current working directory %s/%s\n",cwd,LOCAL_FILE);
             // Listing files 
             while ((pDirent = readdir(pDir)) != NULL) {
                 if((strcmp(pDirent->d_name,".")==0 || strcmp(pDirent->d_name,"..")==0 || (*pDirent->d_name) == '.' )){
-                }
-                else{
-                        //printf ("%s\n", (*pDirent).d_name);
-                        fprintf(f,"%s\n",pDirent->d_name);
-                } 
+                    continue;
+                }else{
+                    fprintf(f,"%s\n",pDirent->d_name);
+                }   
             }
             fclose(f);
-            closedir (pDir);    
+            closedir (pDir);   
+
+
+            //Connect and update index file to server
+            int socketToUpdate;
+            if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0){
+                printf("Update stopped . Server couldnt respond \n");
+                return;
+            }
+            else {
+                printf("Updating to Server in process \n");
+            }
+            write(socketToUpdate,SYNREQ,SYNREQ_SIZE);
+            char *updateVer = "1.1";
+            //updateVer[2] = (char) updateCount;
+             write(socketToUpdate,&updateCount,sizeof(int));
+            //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
+            
+            if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
+                printf(" Update to server failed , thread stopped\n");
+                return;
+            }
+            else{
+                printf("Update to server successful\n");
+            }
+            
+            close(socketToUpdate);
+             
             
         }
         time2 = clock();
@@ -216,58 +251,101 @@ void *synchronizeFolder(){
     return NULL;
 
 }
-void *downloadFile(){
+void *downloadFile()
+{
     pthread_detach(pthread_self());
     printf("Thread created id %ld for downloading data\n \n",pthread_self());
     int socketToDownload;
     struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
     int connectStatus;
-    // allocation of socket 
-
-    // create a socket Ipv4, TCP , TCP'S protocol
-    socketToDownload = socket(AF_INET,SOCK_STREAM,0);
-    if(socketToDownload < 0 )
-        {
-            printf("Socket Creation Error \n");
-            exit(0);
-        }
-    // Create target server IPv4, TCP, PORT ,IP ADDRESS     
-    indexServerAddr.sin_family = AF_INET;
-    indexServerAddr.sin_port = htons(INDEX_PORT);
-    indexServerAddr.sin_addr.s_addr = inet_addr(INDEX_HOST);
-    server_address_size = sizeof(indexServerAddr);
-    // Connect to server
-    connectStatus = connect(socketToDownload,(struct sockaddr *)&indexServerAddr,server_address_size);
-    if(connectStatus <0 ){
+    if(connectToServerFunction(&socketToDownload,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
-    }
-    else {
-        printf("IndexServer Connected\n");
-    }
+        return ;
+    } else {
+         printf("IndexServer Connected\n");
+    }   
+   // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
+    printf("%d**",write(socketToDownload,DOWNREQ,DOWNREQ_SIZE));
     time_t time1 = clock();
     time_t time2 = clock();
-    while(1){
-        int i;
-        printf("Nhap code \n");
-        char buffer[15];
-        scanf("%d",&i);
-        int port;
-        int sentBytes = send(socketToDownload,&i,sizeof(i),0);
-        int getRepliesResult = recv(socketToDownload,buffer,sizeof(buffer),0);
-        int getRepliesPort = recv(socketToDownload,&port,sizeof(port),0);
-        printf("%s:Hello:port:%d",buffer,port);
-        /*
-        time2 = clock();{
-            if(time2 -time1 > (10*CLOCKS_PER_SEC))
-            {
-                time1 = clock();
-                printf("Doctor \n");
-            }
-        }*/
-    }
-    return NULL;
+    //char buffer[15];
+    char buffer[50];
+    bzero(buffer, sizeof(buffer));
+    int i;
 
+    while(1)
+    {
+        
+        printf("Ready Upload list to Server, enter code \n");
+        scanf("%d",&i);
+        write(socketToDownload,&i,sizeof(i));
+        //write(socketToDownload,"Hello \n",50);
+        //printf("%d@@@@",sendFile(LIST_FILE, socketToDownload));
+       
+    }
+    /*char *addr;
+    int port;
+    
+    port = getPeerAddr("test.txt",&addr);
+    printf("\n%s", addr);
+    printf("\n%d", port);*/
+    return NULL;
+}
+
+
+int sendFile(char* fileName, int socket) // has sent file_size b4
+{
+    int size = 0, maxTransUnit = 1240;
+    char segment[1240] = {0};
+
+    int totalSize = 0;
+    FILE *file = fopen(fileName, "r");
+    if(file == NULL) 
+    {
+        char cwd[100];      
+        if (getcwd(cwd, sizeof(cwd)) != NULL) 
+        {
+            printf("Current working dir: %s\n", cwd);
+        } else 
+        {
+            perror(" dkm xa hoigetcwd() error");
+            return 0;
+        }
+        //perror(" fopen ");
+        printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
+        totalSize = 0;
+        write(socket, &totalSize, sizeof(totalSize));
+        return 0;     
+    }
+    else 
+    {
+        //printf("FUCKFUCK");
+        fseek(file, 0L, SEEK_END);
+        totalSize = ftell(file);
+        write(socket, &totalSize, sizeof(totalSize));
+        fclose(file);
+        if (totalSize > 0)
+        {
+            //printf("FUck");
+            file = fopen(fileName, "r");
+            while (sizeof(segment) <= maxTransUnit)
+            {
+                maxTransUnit = fread(segment, 1, 1240, file);
+                segment[maxTransUnit] = 0;
+                write(socket, segment, maxTransUnit);
+                size += maxTransUnit;
+            }
+            printf("=====Sent %s  ! \n   ",fileName); 
+            fclose(file);
+            return 1;
+        }
+        else {
+            printf("%s has size = %d\n",fileName,totalSize);
+            return 0;
+        }
+    }
+    return 1;
 }
 int receiveFile(char* fileName,int file_size, int socket){
 	clock_t time = 0;
@@ -276,8 +354,8 @@ int receiveFile(char* fileName,int file_size, int socket){
     char segment[1240] = {0};
 	char str[80];
 	//fileName[0] = 'R';
-	totalSize = file_size;
-    //read(socket, &totalSize, sizeof(totalSize));
+
+    read(socket, &totalSize, sizeof(totalSize));
     if(totalSize <= 0) {
         printf("Partner response with file size = 0 \n");
         return 0;
@@ -299,55 +377,31 @@ int receiveFile(char* fileName,int file_size, int socket){
         return 1;
     }
 }
-
-int sendFile(char* fileName, int socket) // has sent file_size b4
+int getPeerAddr(char *peerHasFile, char **addr)
 {
-    int size = 0, maxTransUnit = 1240;
-    char segment[1240] = {0};
+    char *portChar;
+    int port=0;
+    FILE *fp = fopen(peerHasFile, "r");
+    if(fp == NULL)
+    {
+        printf("fopen failed\n\n");
+    }
+    char * getFirstPeerAddr = NULL;
 
-    int totalSize = 0;
-    FILE *file = fopen(fileName, "r");
-    if(file == NULL) 
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    if((read = getline(&line, &len, fp)) != -1)
     {
-        char cwd[100];      
-        if (getcwd(cwd, sizeof(cwd)) != NULL) 
-        {
-            //printf("Current working dir: %s\n", cwd);
-        } else 
-        {
-            perror("getcwd() error");
-        return 0;
-        }
-        //perror(" fopen ");
-        printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
-        totalSize = 0;
-        write(socket, &totalSize, sizeof(totalSize));
-        return 0;     
+        //printf("%s", line);
     }
-    else 
-    {
-        fseek(file, 0L, SEEK_END);
-        totalSize = ftell(file);
-        //write(socket, &totalSize, sizeof(totalSize));
-        fclose(file);
-        if (totalSize > 0)
-        {
-            file = fopen(fileName, "r");
-            while (sizeof(segment) <= maxTransUnit)
-            {
-                maxTransUnit = fread(segment, 1, 1240, file);
-                segment[maxTransUnit] = 0;
-                write(socket, segment, maxTransUnit);
-                size += maxTransUnit;
-            }
-            printf("\t \t \t Sent %s  ! \n   ",fileName); 
-            fclose(file);
-            return 1;
-        }
-    }
-    return 1;
+
+    *addr = strtok(line, ":");
+    portChar = strtok(NULL, ":");
+    portChar = strtok(portChar, ".");
+    port = atoi(portChar);
+    return port;
+
 }
-
-
 
 

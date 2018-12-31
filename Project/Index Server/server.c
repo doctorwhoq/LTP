@@ -13,32 +13,19 @@
 #include <dirent.h>
 
 const int INDEX_PORT = 15000;
+const int DEFAULT_NAME_SIZE = 30;
 const char* INDEX_HOST = "192.168.0.100";
 const int DEFAULT_SIZE = 1024;
 const int DEFAULT_LENGTH = 20;
 const int MAX_CLIENTS = 5;
 const char* SYNREQ = "REQ_TO_SYNC";
 const char* DOWNREQ = "REQ_TO_DOWN";
+const char* SERVER_PEER_SHARE = "./peerShare/";
 const int SYNREQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12; 
 void * handleSynThread(void *);
 void * handleReqThread(void *);
-
-void saveClientAddr(const char *fileName, char *addr, char* portAndSizeFile)
-{
-    //save client addr as IP:PORT.txt\n
-
-    //cannot pointing string literal, use strdup to use strtok
-    char *str = strdup(portAndSizeFile);
-    char* getPort = strtok(str, ":");
-    
-    strcpy(fileName, addr);
-    strcat(fileName, ":");
-    strcat(fileName, getPort);
-    strcat(fileName, ".txt");
-    strcat(fileName, "\n");
-    return;
-}
+void saveClientAddr(const char *fileName, char *addr, char* port);
 
 int main()
 {
@@ -93,7 +80,7 @@ int main()
             pthread_create(&synThread, NULL ,&handleSynThread,(void *)acceptedSocket);
         }
         else if ( strcmp(buffer,DOWNREQ) == 0) {
-            //pthread_create(&reqThread, NULL ,&handleReqThread,(void *)acceptedSocket);
+            pthread_create(&reqThread, NULL ,&handleReqThread,(void *)acceptedSocket);
         }    
          
     }
@@ -108,14 +95,43 @@ void *handleSynThread(void *socketInfo)
     int socketId = *((int *)socketInfo);
     char buffer[50];
     bzero(buffer, sizeof(buffer));
+    // get client update id
     int readResult = read(socketId,&i,sizeof(i));
     printf("Current update from client : %d\n",i);
-    if(receiveFile("ClientIndexfile.txt",socketId) == 1) {
+    //get client info to save file
+    int port;   
+    int readResult2 = read(socketId,&port,sizeof(port));
+    printf("Client is opening for transfer request on %d\n", port);
+    char ipstr[30];
+    socklen_t len;
+    struct sockaddr_storage addr;
+    len = sizeof addr;
+    getpeername(socketId, (struct sockaddr*)&addr, &len);
+    struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+    inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+    printf("Client IP : %s\n",ipstr);
+    char clientFileName[40];
+    char clientPublicPort[6];
+    bzero(clientFileName,sizeof(clientFileName));
+    snprintf(clientPublicPort, 10, "%d", port);
+    //itoa(port,clientPublicPort,10);
+    saveClientAddr(clientFileName,ipstr,clientPublicPort);
+    char temp[40];
+    strcpy(temp,SERVER_PEER_SHARE);
+    strcat(temp,clientFileName);
+    strcpy(clientFileName,temp);
+    //printf("##%s\n",clientFileName);
+
+    // receive index file
+    if(receiveFile(clientFileName,socketId) == 1) {
         printf("Synchronizing successfully \n");
     }else{
         printf("Syncronize failed \n");
     }
-    printf("This thread has been closed \n");
+    // saving client update info
+    
+
+    printf("This thread has been closed \n\n");
     return NULL;
 }
 
@@ -126,24 +142,21 @@ void * handleReqThread(void *socketInfo)
     
     int i;
     int socketId = *((int *)socketInfo);
-    char buffer[50];
+    char buffer[DEFAULT_NAME_SIZE];
     bzero(buffer, sizeof(buffer));
     while(1)
     {
         
-        int readResult = read(socketId,&i,sizeof(i));
-        if(i == 0){
-            printf("Client doesnt want to send anything \n");
-            break;
-        }
-        if(readResult == 0 )
+        int readResult = read(socketId,buffer,sizeof(buffer));
+
+        if(readResult == 0 || strcmp(buffer,"") == 0)
         {
             printf("  Client has closed its connection \n ");
             break;
             //fix client ctrl+c or buffer = ""
         }
         //receiveFile("ClientIndexfile.txt",20,socketId);
-        printf("%d Sent code\n", i);
+        printf("+++++Client has requested %s::\n", buffer);
         
     }
     close(socketId);
@@ -241,7 +254,7 @@ int receiveFile(char* fileName, int socket)
 }
 
 
-void createFileHasReqFileToClient(char fileName[])
+void createSearchResultFile(char fileName[])
 {
     //int fd = *(int *)sockfd;
     FILE* peerHasFileList,*fcheck;
@@ -249,7 +262,7 @@ void createFileHasReqFileToClient(char fileName[])
     size_t len = 0;
     ssize_t read;
 
-    peerHasFileList = fopen("FileToAnsReqToClient.txt", "w");
+    peerHasFileList = fopen("resultFile.txt", "w");
 	fflush(peerHasFileList);
     if(peerHasFileList == NULL)
 	{
@@ -316,4 +329,44 @@ void createFileHasReqFileToClient(char fileName[])
 	fclose(peerHasFileList);
 
 }
+int getPeerAddr(char *peerHasFile, char **addr)
+{
+    char *portChar;
+    int port=0;
+    FILE *fp = fopen(peerHasFile, "r");
+    if(fp == NULL)
+    {
+        printf("fopen failed\n\n");
+    }
+    char * getFirstPeerAddr = NULL;
 
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    if((read = getline(&line, &len, fp)) != -1)
+    {
+        //printf("%s", line);
+    }
+
+    *addr = strtok(line, ":");
+    portChar = strtok(NULL, ":");
+    portChar = strtok(portChar, ".");
+    port = atoi(portChar);
+    return port;
+
+}
+void saveClientAddr(const char *fileName, char *addr, char* port)
+{
+    //save client addr as IP:PORT.txt\n
+
+    //cannot pointing string literal, use strdup to use strtok
+    
+    strcpy(fileName, addr);
+    strcat(fileName, ":");
+    strcat(fileName, port);
+    strcat(fileName, ".txt");
+    strcat(fileName, "\n");
+    //strcat(fileName, '\0');
+
+    return;
+}
