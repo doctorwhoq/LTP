@@ -21,8 +21,11 @@ const int MAX_CLIENTS = 5;
 const char* SYNREQ = "REQ_TO_SYNC";
 const char* DOWNREQ = "REQ_TO_DOWN";
 const char* SERVER_PEER_SHARE = "./peerShare/";
+const char* FOUNDS = "SEA_I_FOUND";
+const char* TAIL = ".txt";
+const char* FOUNDN = "SEA_N_FOUND";
 const int SYNREQ_SIZE = 12;
-const int DOWNREQ_SIZE = 12; 
+const int REQ_SIZE = 12; 
 const char* SEARCH_RES = "SearchResult:";
 void * handleSynThread(void *);
 void * handleReqThread(void *);
@@ -74,7 +77,7 @@ int main()
         printf("------>New connection accepted\n");
         char buffer[12];
         bzero(buffer,sizeof(buffer));
-        int cout =read(*acceptedSocket,buffer,DOWNREQ_SIZE);  
+        int cout =read(*acceptedSocket,buffer,REQ_SIZE);  
         printf("Current Request :%s\n",buffer);
           
         if(strcmp(buffer,SYNREQ) == 0){
@@ -91,18 +94,18 @@ int main()
 void *handleSynThread(void *socketInfo)
 {
     pthread_detach(pthread_self());
-    printf("New thread created for Synchronizing \n");
+    //printf("New thread created for Synchronizing \n");
     int i;
     int socketId = *((int *)socketInfo);
     char buffer[50];
     bzero(buffer, sizeof(buffer));
     // get client update id
     int readResult = read(socketId,&i,sizeof(i));
-    printf("Current update from client : %d\n",i);
+    //printf("Current update from client : %d\n",i);
     //get client info to save file
     int port;   
     int readResult2 = read(socketId,&port,sizeof(port));
-    printf("Client is opening for transfer request on %d\n", port);
+    //printf("Client is opening for transfer request on %d\n", port);
     char ipstr[30];
     socklen_t len;
     struct sockaddr_storage addr;
@@ -139,7 +142,7 @@ void *handleSynThread(void *socketInfo)
 
 void * handleReqThread(void *socketInfo)
 {
-    printf("New thread created for Handling Requests\n");
+    //printf("New thread created for Handling Requests\n");
     pthread_detach(pthread_self());
     
     int i;
@@ -158,9 +161,10 @@ void * handleReqThread(void *socketInfo)
             //fix client ctrl+c or buffer = ""
         }
         //receiveFile("ClientIndexfile.txt",20,socketId);
-        printf("+++++Client has requested %s::\n", buffer);
+        printf("+++++Client has requested  : %s ::\n", buffer);
         if(createSearchResultFile(buffer) == 1){
-            printf("File found");
+            printf("File found\n");
+            write(socketId,FOUNDS,REQ_SIZE);
             char result[40];
             bzero(result,sizeof(result));
             strcpy(result,SEARCH_RES);
@@ -168,7 +172,9 @@ void * handleReqThread(void *socketInfo)
             sendFile(result,socketId);
         }
         else {
-            printf("File not found ");
+            printf("File not found \n");
+            write(socketId,FOUNDN,REQ_SIZE);
+
         }
         
     }
@@ -199,9 +205,10 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
             return 0;
         }
         //perror(" fopen ");
-        printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
+        printf("=====File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
         totalSize = 0;
         write(socket, &totalSize, sizeof(totalSize));
+        fclose(file);
         return 0;
             
     } 
@@ -221,7 +228,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
                 write(socket, segment, maxTransUnit);
                 size += maxTransUnit;
             }
-            printf("\t \t \t Sent %s  ! \n   ",fileName); 
+            printf("=====Sent %s  ! \n   ",fileName); 
             
             
             fclose(file);
@@ -229,6 +236,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         }
          else {
             printf("%s has size = %d\n",fileName,totalSize);
+            fclose(file);
             return 0;
         }
     }
@@ -338,9 +346,14 @@ int createSearchResultFile(char fileName[])
                     //printf("%s:%s:\n",fileName,line);
                     if(strcmp(fileName, line)==0 || strcmp(temp,line) == 0)
                     {
+                        char temp2[40];
+                        strcpy(temp2,de->d_name);
+                        char* index = strstr(temp2,TAIL);
+                        *index = '\0';
                         found = 1;
-                        printf("File has been found at : %s\n", de->d_name);
-                        fprintf(peerHasFileList, "%s\n", de->d_name);	
+                        //temp[index] = '\0';
+                        printf("File has been found at peer: %s\n",temp2);
+                        fprintf(peerHasFileList, "%s", de->d_name);	
                     }
                 }
     
@@ -378,6 +391,7 @@ int getPeerAddr(char *peerHasFile, char **addr)
     portChar = strtok(NULL, ":");
     portChar = strtok(portChar, ".");
     port = atoi(portChar);
+    fclose(fp);
     return port;
 
 }

@@ -27,10 +27,13 @@ const int MAX_CONNECTING_CLIENTS = 5;
 const char* CLIENT_NAME = "Client number ";
 const char* SEARCH_RES = "SearchResult:";
 const char* SYNREQ = "REQ_TO_SYNC";
-const int SYNREQ_SIZE = 12;
+const char* FOUNDS = "SEA_I_FOUND";
+const char* FOUNDN = "SEA_N_FOUND";
+const char* LOG = "Logs/";
+const int REQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12;
 const char* DOWNREQ = "REQ_TO_DOWN"; 
-const int SYN_TIME = 10 ;
+const int SYN_TIME = 60 ;
 
 
 void *handleIncomingFileTransfer(void * socketInfo);
@@ -94,6 +97,7 @@ int main(int argc, char *argv[])
 
     // Run backgroud Synchronize 
     pthread_create(&synchronizeThread,NULL,&synchronizeFolder,NULL);
+    sleep(1);
     // RUn background client waiting for dowloading data 
     pthread_create(&downloadThread,NULL,&downloadFile,NULL);
 
@@ -181,7 +185,8 @@ void *handleIncomingFileTransfer(void *socketInfo)
     strcpy(temp,LOCAL_FILE);
     strcat(temp,buffer);
     sendFile(temp,socketId);
-    printf("File sent");
+    printf("File sent \n");
+    close(socketId);
     return NULL;
 }
 
@@ -241,7 +246,7 @@ void *synchronizeFolder()
             else {
                 printf("Updating to Server in process \n");
             }
-            write(socketToUpdate,SYNREQ,SYNREQ_SIZE);
+            write(socketToUpdate,SYNREQ,REQ_SIZE);
 
             char *updateVer = "1.1";
             //updateVer[2] = (char) updateCount;
@@ -281,7 +286,7 @@ void *downloadFile()
          printf("IndexServer Connected\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
-    printf("%d**",write(socketToSearch,DOWNREQ,DOWNREQ_SIZE));
+    write(socketToSearch,DOWNREQ,DOWNREQ_SIZE);
     time_t time1 = clock();
     time_t time2 = clock();
     //char buffer[15];
@@ -302,10 +307,20 @@ void *downloadFile()
 			break;
 		printf(" You entered :  %s \n",selection);
         int sentBytes = send(socketToSearch,selection,DEFAULT_NAME_SIZE,0);
+        
         // get search result from server 
         char result[40];
         bzero(result,sizeof(result));
-        strcpy(result,SEARCH_RES);
+        int searchRes = read(socketToSearch,result,REQ_SIZE);
+        if(strcmp(result,FOUNDN) == 0){
+            printf("File %s not found \n",selection);
+            continue;
+        }
+        bzero(result,sizeof(result));
+        //strcpy(result,SEARCH_RES);
+        //strcat(result,selection);
+        strcpy(result,LOG);
+        strcat(result,SEARCH_RES);
         strcat(result,selection);
         receiveFile(result,socketToSearch);
         //char desIp[DEFAULT_NAME_SIZE];
@@ -324,7 +339,11 @@ void *downloadFile()
             char temp2[40];
             strcpy(temp2,LOCAL_FILE);
             strcat(temp2,selection);
-            receiveFile(temp2,socketToDownload);
+            if(receiveFile(temp2,socketToDownload)== 1)
+                printf("File %s has been downloaded\n",selection);
+            else {
+                printf("File empty \n");
+            }    
         }
         
        
@@ -360,6 +379,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         printf(" \t \t \t File not found %ld : %s !! \n \n \n",sizeof(fileName)/sizeof(char),fileName);
         totalSize = 0;
         write(socket, &totalSize, sizeof(totalSize));
+        fclose(file);
         return 0;     
     }
     else 
@@ -368,11 +388,11 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
         fseek(file, 0L, SEEK_END);
         totalSize = ftell(file);
         write(socket, &totalSize, sizeof(totalSize));
-        fclose(file);
+        rewind(file);
         if (totalSize > 0)
         {
             //printf("FUck");
-            file = fopen(fileName, "r");
+            //file = fopen(fileName, "r");
             while (sizeof(segment) <= maxTransUnit)
             {
                 maxTransUnit = fread(segment, 1, 1240, file);
@@ -380,15 +400,17 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
                 write(socket, segment, maxTransUnit);
                 size += maxTransUnit;
             }
-            printf("=====Sent %s  ! \n   ",fileName); 
+            printf("=====Sent %d bytes : %s  ! \n   ",totalSize,fileName); 
             fclose(file);
             return 1;
         }
         else {
-            printf("%s has size = %d\n",fileName,totalSize);
+            //printf("%s has size = %d\n",fileName,totalSize);
             return 0;
+            
         }
     }
+
     return 1;
 }
 
@@ -411,7 +433,7 @@ int receiveFile(char* fileName, int socket)
 		
         FILE *file = fopen(fileName, "w");
 		time = clock();
-		//printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
+		printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
         while(sizeof(segment) <= maxTransUnit) {
             maxTransUnit = read(socket, segment, sizeof(segment));
             segment[maxTransUnit] = 0;
@@ -420,8 +442,9 @@ int receiveFile(char* fileName, int socket)
         }
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
-        printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
         fclose(file);
+        printf("=====Received %d of %s bytes in %lf seconds \n",size,fileName, time_taken);
+        
         return 1;
     }
 }
