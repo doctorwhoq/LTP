@@ -324,7 +324,7 @@ void *downloadFile()
             char temp2[40];
             strcpy(temp2,LOCAL_FILE);
             strcat(temp2,selection);
-            receiveFile(selection,socketToDownload);
+            receiveFile(temp2,socketToDownload);
         }
         
        
