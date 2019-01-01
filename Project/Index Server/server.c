@@ -24,6 +24,7 @@ const char* SERVER_PEER_SHARE = "./peerShare/";
 const char* FOUNDS = "SEA_I_FOUND";
 const char* TAIL = ".txt";
 const char* FOUNDN = "SEA_N_FOUND";
+const char* LOG = "Logs/";
 const int SYNREQ_SIZE = 12;
 const int REQ_SIZE = 12; 
 const char* SEARCH_RES = "SearchResult:";
@@ -169,7 +170,8 @@ void * handleReqThread(void *socketInfo)
             write(socketId,FOUNDS,REQ_SIZE);
             char result[40];
             bzero(result,sizeof(result));
-            strcpy(result,SEARCH_RES);
+            strcpy(result,LOG);
+            strcat(result,SEARCH_RES);
             strcat(result,buffer);
             sendFile(result,socketId);
         }
@@ -276,7 +278,7 @@ int receiveFile(char* fileName, int socket)
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
         printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
         fclose(file);
-
+        /*
         file = fopen(fileName, "r");
         if(file == NULL)
         {
@@ -294,6 +296,7 @@ int receiveFile(char* fileName, int socket)
         }
 
         fclose(file);
+        */
         return 1;
     }
 }
@@ -309,7 +312,8 @@ int createSearchResultFile(char fileName[])
     ssize_t read;
     char result[40];
     bzero(result,sizeof(result));
-    strcpy(result,SEARCH_RES);
+    strcpy(result,LOG);
+    strcat(result,SEARCH_RES);
     strcat(result,fileName);
     peerHasFileList = fopen(result, "w");
 	fflush(peerHasFileList);
