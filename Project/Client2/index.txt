@@ -1,4 +1,0 @@
-12.txt
-22.txt
-a.txt
-c.txt

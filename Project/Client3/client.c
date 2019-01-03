@@ -40,7 +40,7 @@ void *handleIncomingFileTransfer(void * socketInfo);
 void *synchronizeFolder();
 void *downloadFile();
 
-pthread_mutex_t lock;
+
 
 int main(int argc, char *argv[])
 {
@@ -302,7 +302,7 @@ void *downloadFile()
     while(1)
     {
         //ENter file name so that server can search for it
-        pthread_mutex_lock (&lock);
+        
 		printf("\n------Enter the file name to download-------- : \n") ;
 		fflush(stdin);
 		scanf("%s",&selection);
@@ -320,38 +320,41 @@ void *downloadFile()
         int searchRes = read(socketToSearch,result,REQ_SIZE);
         if(strcmp(result,FOUNDN) == 0){
             printf("File %s not found \n",selection);
-            continue;
-        }
-        bzero(result,sizeof(result));
-        //strcpy(result,SEARCH_RES);
-        //strcat(result,selection);
-        strcpy(result,LOG);
-        strcat(result,SEARCH_RES);
-        strcat(result,selection);
-        receiveFile(result,socketToSearch);
-        //char desIp[DEFAULT_NAME_SIZE];
-        char* desIp;
-        int desPort = getPeerAddr(result,&desIp);
-        printf("New target to download file %s-%d\n",desIp,desPort);
-        // new Target machine aquired, connecting 
-        int socketToDownload;
-        
-        if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
-            printf("Connect to target machine failed , trying...\n");
         }
         else {
-            printf("Connected\n");
-            write(socketToDownload,selection,sizeof(selection));
-            char temp2[40];
-            strcpy(temp2,LOCAL_FILE);
-            strcat(temp2,selection);
-            if(receiveFile(temp2,socketToDownload)== 1)
-                printf("File %s has been downloaded\n",selection);
+             bzero(result,sizeof(result));
+            //strcpy(result,SEARCH_RES);
+            //strcat(result,selection);
+            strcpy(result,LOG);
+            strcat(result,SEARCH_RES);
+            strcat(result,selection);
+                receiveFile(result,socketToSearch);
+            //char desIp[DEFAULT_NAME_SIZE];
+            char* desIp;
+            int desPort = getPeerAddr(result,&desIp);
+            printf("New target to download file %s-%d\n",desIp,desPort);
+            // new Target machine aquired, connecting 
+            int socketToDownload;
+            
+            if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
+                printf("Connect to target machine failed , trying...\n");
+            }
             else {
-                printf("File empty \n");
-            }    
+                printf("Connected\n");
+                write(socketToDownload,selection,sizeof(selection));
+                char temp2[40];
+                strcpy(temp2,LOCAL_FILE);
+                strcat(temp2,selection);
+                if(receiveFile(temp2,socketToDownload)== 1)
+                    printf("File %s has been downloaded\n",selection);
+                else {
+                    printf("File empty \n");
+                }    
+            }
+            
+
         }
-        pthread_mutex_unlock (&lock);
+       
         
        
     }
