@@ -33,7 +33,7 @@ const char* LOG = "Logs/";
 const int REQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12;
 const char* DOWNREQ = "REQ_TO_DOWN"; 
-const int SYN_TIME = 60 ;
+const int SYN_TIME = 10 ;
 
 
 void *handleIncomingFileTransfer(void * socketInfo);
@@ -211,12 +211,16 @@ void *synchronizeFolder()
     {
         //continous updates of file    
         // update every minute 
-        if(time_taken > SYN_TIME*2 )
+        if(time_taken > SYN_TIME )
         {
             time1 = clock();
             updateCount= updateCount+ 1;
             //printf("----->Updating ..%d\n",updateCount);
             // update file list into index file
+            FILE *file = fopen(LIST_FILE,"r");
+            fseek(file, 0L, SEEK_END);
+            int preSize = ftell(file);
+            fclose(file);
             f = fopen(LIST_FILE,"w");
             if(f == NULL){
                 printf("Error opening file");
@@ -241,37 +245,50 @@ void *synchronizeFolder()
                     fprintf(f,"%s\n",pDirent->d_name);
                 }   
             }
+            rewind(file);
+            file = fopen(LIST_FILE,"r");
+            fseek(file, 0L, SEEK_END);
+            int aftSize = ftell(file);
+            fclose(file);
             fclose(f);
-            closedir (pDir);   
- 
 
-            //Connect and update index file to server
-            int socketToUpdate;
-            if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0)
-            {
-                printf("Update stopped . Server couldn't respond \n");
-                return NULL;
+            closedir (pDir);   
+            //CHeck if file size has changed and update file index to server
+            //printf("%d----%d\n",preSize,aftSize);
+            if(aftSize != preSize || updateCount == 1){
+                //printf("File has been updated");
+                 //Connect and update index file to server
+                int socketToUpdate;
+                if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0)
+                {
+                    printf("Update stopped . Server couldn't respond \n");
+                    return NULL;
+                }
+                else {
+                    //printf("Updating to Server in process \n");
+                }
+                write(socketToUpdate,SYNREQ,REQ_SIZE);
+
+                char *updateVer = "1.1";
+                //updateVer[2] = (char) updateCount;
+                write(socketToUpdate,&updateCount,sizeof(int));
+                write(socketToUpdate,&BIND_PORT_CLIENT_3,sizeof(BIND_PORT_CLIENT_3));
+                //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
+                
+                if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
+                    printf("Update to server failed , thread stopped\n");
+                    return NULL;
+                }
+                else{
+                    printf("=====Synchronizing\n");
+                }
+                
+                close(socketToUpdate);
             }
             else {
-                //printf("Updating to Server in process \n");
-            }
-            write(socketToUpdate,SYNREQ,REQ_SIZE);
-
-            char *updateVer = "1.1";
-            //updateVer[2] = (char) updateCount;
-            write(socketToUpdate,&updateCount,sizeof(int));
-            write(socketToUpdate,&BIND_PORT_CLIENT_3,sizeof(BIND_PORT_CLIENT_3));
-            //printf("%d@@@@",sendFile(LIST_FILE, socketToUpdate));
-            
-            if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
-                printf("Update to server failed , thread stopped\n");
-                return NULL;
-            }
-            else{
-                printf("=====Synchronizing\n");
+                //printf("No changes in file");
             }
             
-            close(socketToUpdate);
              
             
         }
