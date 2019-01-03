@@ -36,6 +36,7 @@ const char* DOWNREQ = "REQ_TO_DOWN";
 const int SYN_TIME = 10 ;
 const char* DEAD = "Peer OFFLINE";
 const char* ALIVE = "Peer ONLINE";
+const int findFist = 1;
 
 
 
@@ -621,7 +622,9 @@ int checkAlive( char *resultFile,int *status){
             status[count] = 1;
             printf("%d. %s:%d %s \n",count,desIp,port,ALIVE);
             //Find the first alive peer to download
-            //break;
+            if(findFist == 1){
+                break;
+            }
         }
         
         
