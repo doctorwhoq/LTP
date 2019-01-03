@@ -243,7 +243,7 @@ void *synchronizeFolder()
             }
             fclose(f);
             closedir (pDir);   
-
+ 
 
             //Connect and update index file to server
             int socketToUpdate;
