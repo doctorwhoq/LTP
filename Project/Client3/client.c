@@ -328,6 +328,7 @@ void *downloadFile()
 		printf("--------Enter the file name to download-------- : \n") ;
 		fflush(stdin);
 		scanf("%s",selection);
+        time1 = clock();
 		if('\n' == selection[strlen(selection) - 1]) //remove \n
 				selection[strlen(selection) - 1] = '\0';
 		if(strcmp(selection,"QUIT") == 0)
@@ -342,6 +343,7 @@ void *downloadFile()
         int searchRes = read(socketToSearch,result,REQ_SIZE);
         if(strcmp(result,FOUNDN) == 0){
             printf("==File %s not found \n",selection);
+            time2 =clock();
         }
         else {
              bzero(result,sizeof(result));
@@ -361,6 +363,7 @@ void *downloadFile()
             
             if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
                 printf("Connect to target machine failed ...\n");
+                time2= clock();
             }
             else {
                 printf("Connected\n");
@@ -372,12 +375,14 @@ void *downloadFile()
                     printf("File %s has been downloaded\n",selection);
                 else {
                     printf("File empty \n");
-                }    
+                }
+                time2 = clock();    
             }
             
 
         }
-       
+        double time_taken = ((double)(time2 - time1))/CLOCKS_PER_SEC;
+        printf("=====>Request has been handled in %lf seconds\n",time_taken);       
         
        
     }

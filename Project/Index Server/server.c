@@ -293,7 +293,7 @@ int receiveFile(char* fileName, int socket)
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
         printf("=====Received %d bytes in %lf seconds \n",size, time_taken);
         fclose(file);
-        /*
+        
         file = fopen(fileName, "r");
         if(file == NULL)
         {
@@ -309,9 +309,9 @@ int receiveFile(char* fileName, int socket)
         //printf("Retrieved line of length %zu:\n", read);
             printf("%s", line);
         }
-
+        printf("\n");
         fclose(file);
-        */
+        
         return 1;
     }
 }
