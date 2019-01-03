@@ -31,6 +31,9 @@ const char* SEARCH_RES = "SearchResult:";
 void * handleSynThread(void *);
 void * handleReqThread(void *);
 void saveClientAddr(const char *fileName, char *addr, char* port);
+int sendFile(const char*,int);
+int receiveFile(char*,int);
+int createSearchResultFile(char*);
 
 int main()
 {
@@ -77,6 +80,7 @@ int main()
         *acceptedSocket = accept(listenSock, (struct sockaddr *) &clientAddr, &addr_size);
         if (errno == EINTR) continue;
             else;// perror("accept error");
+        printf("---------------------------------------------------\n");    
         printf("------>New connection accepted\n");
         char buffer[12];
         bzero(buffer,sizeof(buffer));
@@ -163,10 +167,21 @@ void * handleReqThread(void *socketInfo)
             break;
             //fix client ctrl+c or buffer = ""
         }
-        //receiveFile("ClientIndexfile.txt",20,socketId);
+        //receiveFile("ClientIndexfile.txt",20,socketId);]]
+        //get client info
+         char ipstr[30];
+        socklen_t len;
+        struct sockaddr_storage addr;
+        len = sizeof addr;
+        getpeername(socketId, (struct sockaddr*)&addr, &len);
+        struct sockaddr_in *s = (struct sockaddr_in *)&addr;
+        inet_ntop(AF_INET, &s->sin_addr, ipstr, sizeof ipstr);
+        printf("Client IP : %s\n",ipstr);
+        //get client req
+
         printf("+++++Client has requested  : %s ::\n", buffer);
         if(createSearchResultFile(buffer) == 1){
-            printf("File found\n");
+            //printf("File found\n");
             write(socketId,FOUNDS,REQ_SIZE);
             char result[40];
             bzero(result,sizeof(result));
@@ -183,12 +198,12 @@ void * handleReqThread(void *socketInfo)
         
     }
     close(socketId);
-    printf("Thread exited\n");
+    printf("Thread exited\n\n");
     free(socketInfo);
     return NULL;
 }
 
-int sendFile(char* fileName, int socket) // has sent file_size b4
+int sendFile(const char* fileName, int socket) // has sent file_size b4
 {
     int size = 0, maxTransUnit = 1240;
     char segment[1240] = {0};
@@ -232,7 +247,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
                 write(socket, segment, maxTransUnit);
                 size += maxTransUnit;
             }
-            printf("=====Sent %s  ! \n   ",fileName); 
+            printf("=====Sent %s  ! \n \n ",fileName); 
             
             
             fclose(file);

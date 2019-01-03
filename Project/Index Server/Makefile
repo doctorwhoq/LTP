@@ -4,19 +4,19 @@ CC = gcc
 # compiler flags:
 #  -g    adds debugging information to the executable file
 #  -Wall turns on most, but not all, compiler warnings
+CFLAGS  = -lpthread
 
-LIBS ?= -lpthread
 # the list of header files
 #INCL   = server.h
 #the list of source files
-SRC = server.c
+SRC = server.c 
 OBJ = $(SRC:.c=.o)
 
 # the build target executable:
 TARGET = server
 
 $(TARGET): $(OBJ)
-	$(CC) $(CCFLAGS) $(LOCFLAGS) $< $(LIBS) -o $@
+	$(CC) $(SRC) $(CFLAGS) -o $(TARGET)
 
 $(OBJ): $(INCL)
 

@@ -39,6 +39,11 @@ const int SYN_TIME = 60 ;
 void *handleIncomingFileTransfer(void * socketInfo);
 void *synchronizeFolder();
 void *downloadFile();
+int sendFile(const char*,int );
+int receiveFile(char*,int);
+int getPeerAddr(char*,char**);
+
+
 
 
 
@@ -92,7 +97,7 @@ int main(int argc, char *argv[])
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
-        printf("\n-----------Client %s  : UP and RUNNING ! -------------\n---------------Listening on %d----------------\n",hostName,BIND_PORT_CLIENT_3);
+        printf("\n-----------Client %s  : UP and RUNNING ! -------------\n---------------Listening on %d----------------\n\n\n",hostName,BIND_PORT_CLIENT_3);
     }
     else
         printf("Error on listening \n");
@@ -145,7 +150,7 @@ int main(int argc, char *argv[])
     */
     return 0;
 }
-int connectToServerFunction(int* socketToUpdate,char* serverAddress,int port)
+int connectToServerFunction(int* socketToUpdate,const char* serverAddress,int port)
 {
     struct sockaddr_in indexServerAddr; 
     socklen_t server_address_size;
@@ -245,7 +250,7 @@ void *synchronizeFolder()
             if( connectToServerFunction(&socketToUpdate,INDEX_HOST,INDEX_PORT) < 0)
             {
                 printf("Update stopped . Server couldn't respond \n");
-                return;
+                return NULL;
             }
             else {
                 //printf("Updating to Server in process \n");
@@ -260,10 +265,10 @@ void *synchronizeFolder()
             
             if(sendFile(LIST_FILE,socketToUpdate) == 0 ){
                 printf("Update to server failed , thread stopped\n");
-                return;
+                return NULL;
             }
             else{
-                //printf("Update to server successful\n");
+                printf("=====Synchronizing\n");
             }
             
             close(socketToUpdate);
@@ -285,14 +290,14 @@ void *downloadFile()
     int socketToSearch;
     if(connectToServerFunction(&socketToSearch,INDEX_HOST,INDEX_PORT) < 0 ){
         printf("Connect failed \n");
-        return ;
+        return NULL;
     } else {
-         printf("\n----------IndexServer Connected-----------\n");
+         printf("\n------------IndexServer Connected-----------\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
     write(socketToSearch,DOWNREQ,DOWNREQ_SIZE);
-    time_t time1 = clock();
-    time_t time2 = clock();
+    time_t time1;
+    time_t time2;
     //char buffer[15];
 
     
@@ -303,14 +308,14 @@ void *downloadFile()
     {
         //ENter file name so that server can search for it
         
-		printf("\n------Enter the file name to download-------- : \n") ;
+		printf("--------Enter the file name to download-------- : \n") ;
 		fflush(stdin);
-		scanf("%s",&selection);
+		scanf("%s",selection);
 		if('\n' == selection[strlen(selection) - 1]) //remove \n
 				selection[strlen(selection) - 1] = '\0';
 		if(strcmp(selection,"QUIT") == 0)
 			break;
-		printf(" You entered :  %s \n",selection);
+		printf("==You entered :  %s \n",selection);
 
         int sentBytes = send(socketToSearch,selection,DEFAULT_NAME_SIZE,0);
         
@@ -319,7 +324,7 @@ void *downloadFile()
         bzero(result,sizeof(result));
         int searchRes = read(socketToSearch,result,REQ_SIZE);
         if(strcmp(result,FOUNDN) == 0){
-            printf("File %s not found \n",selection);
+            printf("==File %s not found \n",selection);
         }
         else {
              bzero(result,sizeof(result));
@@ -328,16 +333,17 @@ void *downloadFile()
             strcpy(result,LOG);
             strcat(result,SEARCH_RES);
             strcat(result,selection);
-                receiveFile(result,socketToSearch);
+            printf("Getting search results \n");
+            receiveFile(result,socketToSearch);
             //char desIp[DEFAULT_NAME_SIZE];
             char* desIp;
             int desPort = getPeerAddr(result,&desIp);
-            printf("New target to download file %s-%d\n",desIp,desPort);
+            printf("New target to download file :  %s:%d\n",desIp,desPort);
             // new Target machine aquired, connecting 
             int socketToDownload;
             
             if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
-                printf("Connect to target machine failed , trying...\n");
+                printf("Connect to target machine failed ...\n");
             }
             else {
                 printf("Connected\n");
@@ -367,7 +373,7 @@ void *downloadFile()
     return NULL;
 }
 
-int sendFile(char* fileName, int socket) // has sent file_size b4
+int sendFile(const char* fileName, int socket) // has sent file_size b4
 {
     int size = 0, maxTransUnit = 1240;
     char segment[1240] = {0};
@@ -410,7 +416,7 @@ int sendFile(char* fileName, int socket) // has sent file_size b4
                 write(socket, segment, maxTransUnit);
                 size += maxTransUnit;
             }
-            printf("=====Sent %d bytes : %s  ! \n   ",totalSize,fileName); 
+            printf("=====Sent %d bytes:%s!\n",totalSize,fileName); 
             fclose(file);
             return 1;
         }
@@ -443,7 +449,7 @@ int receiveFile(char* fileName, int socket)
 		
         FILE *file = fopen(fileName, "w");
 		time = clock();
-		printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
+		//printf(" File %s is opened for writing %d bytes \n",fileName,totalSize);
         while(sizeof(segment) <= maxTransUnit) {
             maxTransUnit = read(socket, segment, sizeof(segment));
             segment[maxTransUnit] = 0;
@@ -453,8 +459,7 @@ int receiveFile(char* fileName, int socket)
 		time  = clock() - time;
 		double time_taken = ((double)time)/CLOCKS_PER_SEC;
         fclose(file);
-        printf("=====Received %d of %s bytes in %lf seconds \n",size,fileName, time_taken);
-        
+        printf("=====Received %d bytes in %lf seconds\n",size, time_taken);
         return 1;
     }
 }
