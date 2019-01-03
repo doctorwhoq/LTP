@@ -34,6 +34,10 @@ const int REQ_SIZE = 12;
 const int DOWNREQ_SIZE = 12;
 const char* DOWNREQ = "REQ_TO_DOWN"; 
 const int SYN_TIME = 10 ;
+const char* DEAD = "Peer OFFLINE";
+const char* ALIVE = "Peer ONLINE";
+
+
 
 
 void *handleIncomingFileTransfer(void * socketInfo);
@@ -43,6 +47,7 @@ int sendFile(const char*,int );
 int receiveFile(char*,int);
 int getPeerAddr(char*,char**,int);
 int getPeersResult(char*);
+int checkAlive(char*,int*);
 
 
 
@@ -173,7 +178,7 @@ int connectToServerFunction(int* socketToUpdate,const char* serverAddress,int po
     // Connect to server
     connectStatus = connect(*socketToUpdate,(struct sockaddr *)&indexServerAddr,server_address_size);
     if(connectStatus < 0){
-        perror("Socket error ");
+        //perror(" Connect unsuccessful ");
     }
     return connectStatus;
 }
@@ -354,13 +359,35 @@ void *downloadFile()
             strcat(result,SEARCH_RES);
             strcat(result,selection);
             printf("-----Getting search results \n");
+            // save file
             receiveFile(result,socketToSearch);
             //char desIp[DEFAULT_NAME_SIZE];
             char* desIp;
             int selected;
-            printf("Located file on %d peer\n" ,getPeersResult(result));
-            printf("Select peer to download file from : \n");
-            scanf("%d",&selected);
+            int numberOfPeers = getPeersResult(result);
+            int recSelection;
+            //get search result
+            printf("Located file on %d peer\n" ,numberOfPeers);
+            int currentStatus[numberOfPeers+1];
+            
+            checkAlive(result,currentStatus);
+            // allow user to choose peer to download
+            // recommend auto select
+            for(int i = 1;i <= numberOfPeers;i++){
+                if(currentStatus[i] == 1){
+                    recSelection = i;
+                    selected = recSelection;
+                    break;
+                }
+                //printf("Status : %d\n",currentStatus[i]);
+            }
+            //printf("Select peer to download file from : \n");
+            //scanf("%d",&selected);
+            
+            if(currentStatus[selected] == 0){
+                printf("You selected an offline peer,download cant be continue \n, canceling your request...\n");
+                continue;
+            }
             int desPort = getPeerAddr(result,&desIp,selected);
             printf("-----New target to download file :  %s:%d\n",desIp,desPort);
             // new Target machine aquired, connecting 
@@ -372,6 +399,7 @@ void *downloadFile()
             }
             else {
                 printf("-----Connected\n");
+                //Downloading
                 write(socketToDownload,selection,sizeof(selection));
                 char temp2[40];
                 strcpy(temp2,LOCAL_FILE);
@@ -545,7 +573,7 @@ int getPeersResult(char * fileName){
         {
         //printf("Retrieved line of length %zu:\n", read);
             count ++;
-            printf("%d : %s",count, line);
+            //printf("%d : %s %",count, line);
         }
         printf("\n");
         fclose(file);
@@ -553,3 +581,54 @@ int getPeersResult(char * fileName){
         return count;
 }
 
+int checkAlive( char *resultFile,int *status){
+    int port;
+    
+    char *desIp = NULL;
+    char* portChar = NULL;
+    int socketToCheck;
+    //char* status = NULL;
+    //bzero(desIp,sizeof(desIp));
+   // bzero()
+    FILE *file = fopen(resultFile, "r");
+    if(file == NULL)
+    {
+        printf("Cannot search result \n");
+                return 0;
+    }
+
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
+    int count = 0;
+    //printf("%s",resultFile);
+    
+    while ((read = getline(&line, &len, file)) != -1) 
+    {
+            //printf("Retrieved line of length %zu:\n", read);
+        count ++;
+        desIp = strtok(line, ":");
+        portChar = strtok(NULL, ":");
+        portChar = strtok(portChar, ".");
+        port = atoi(portChar);
+               //printf("%d : %s %",count, line);       
+        int checkServer = connectToServerFunction(&socketToCheck,desIp,port);
+        if(checkServer < 0 ){
+            status[count] = 0;
+            printf("%d. %s:%d %s \n",count,desIp,port,DEAD);
+        }
+        else {
+            status[count] = 1;
+            printf("%d. %s:%d %s \n",count,desIp,port,ALIVE);
+            //Find the first alive peer to download
+            //break;
+        }
+        
+        
+        //close(socketToCheck);        
+    }
+    fclose(file);       
+           
+
+
+}
