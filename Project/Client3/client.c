@@ -41,7 +41,7 @@ void *synchronizeFolder();
 void *downloadFile();
 int sendFile(const char*,int );
 int receiveFile(char*,int);
-int getPeerAddr(char*,char**);
+int getPeerAddr(char*,char**,int);
 int getPeersResult(char*);
 
 
@@ -173,7 +173,7 @@ int connectToServerFunction(int* socketToUpdate,const char* serverAddress,int po
     // Connect to server
     connectStatus = connect(*socketToUpdate,(struct sockaddr *)&indexServerAddr,server_address_size);
     if(connectStatus < 0){
-        perror("Socket Error : ");
+        perror("Socket error ");
     }
     return connectStatus;
 }
@@ -357,8 +357,11 @@ void *downloadFile()
             receiveFile(result,socketToSearch);
             //char desIp[DEFAULT_NAME_SIZE];
             char* desIp;
-            int desPort = getPeerAddr(result,&desIp);
-            getPeersResult(result);
+            int selected;
+            printf("Located file on %d peer\n" ,getPeersResult(result));
+            printf("Select peer to download file from : \n");
+            scanf("%d",&selected);
+            int desPort = getPeerAddr(result,&desIp,selected);
             printf("-----New target to download file :  %s:%d\n",desIp,desPort);
             // new Target machine aquired, connecting 
             int socketToDownload;
@@ -488,7 +491,7 @@ int receiveFile(char* fileName, int socket)
     }
 }
 
-int getPeerAddr(char *peerHasFile, char **addr)
+int getPeerAddr(char *peerHasFile, char **addr,int selected)
 {
     char *portChar;
     int port=0;
@@ -502,11 +505,17 @@ int getPeerAddr(char *peerHasFile, char **addr)
     char * line = NULL;
     size_t len = 0;
     ssize_t read;
-    if((read = getline(&line, &len, fp)) != -1)
-    {
-        //printf("%s", line);
+    int count = 0;
+    do {
+        
+        read = getline(&line, &len, fp);
+        count++;
+        if(count == selected){
+            break;
+        }
     }
-
+    while(read != -1);
+   
     *addr = strtok(line, ":");
     
     portChar = strtok(NULL, ":");
@@ -531,14 +540,16 @@ int getPeersResult(char * fileName){
         char *line = NULL;
         size_t len = 0;
         ssize_t read;
+        int count = 0;
         while ((read = getline(&line, &len, file)) != -1) 
         {
         //printf("Retrieved line of length %zu:\n", read);
-            printf("%s", line);
+            count ++;
+            printf("%d : %s",count, line);
         }
         printf("\n");
         fclose(file);
         
-        return 1;
+        return count;
 }
 
