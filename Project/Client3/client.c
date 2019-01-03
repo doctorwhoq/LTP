@@ -42,6 +42,7 @@ void *downloadFile();
 int sendFile(const char*,int );
 int receiveFile(char*,int);
 int getPeerAddr(char*,char**);
+int getPeersResult(char*);
 
 
 
@@ -352,27 +353,28 @@ void *downloadFile()
             strcpy(result,LOG);
             strcat(result,SEARCH_RES);
             strcat(result,selection);
-            printf("Getting search results \n");
+            printf("-----Getting search results \n");
             receiveFile(result,socketToSearch);
             //char desIp[DEFAULT_NAME_SIZE];
             char* desIp;
             int desPort = getPeerAddr(result,&desIp);
-            printf("New target to download file :  %s:%d\n",desIp,desPort);
+            getPeersResult(result);
+            printf("-----New target to download file :  %s:%d\n",desIp,desPort);
             // new Target machine aquired, connecting 
             int socketToDownload;
             
             if(connectToServerFunction(&socketToDownload,desIp,desPort) < 0){
-                printf("Connect to target machine failed ...\n");
+                printf("-----Connect to target machine failed ...\n");
                 time2= clock();
             }
             else {
-                printf("Connected\n");
+                printf("-----Connected\n");
                 write(socketToDownload,selection,sizeof(selection));
                 char temp2[40];
                 strcpy(temp2,LOCAL_FILE);
                 strcat(temp2,selection);
                 if(receiveFile(temp2,socketToDownload)== 1)
-                    printf("File %s has been downloaded\n",selection);
+                    printf("-----File %s has been downloaded\n",selection);
                 else {
                     printf("File empty \n");
                 }
@@ -516,4 +518,27 @@ int getPeerAddr(char *peerHasFile, char **addr)
 
 }
 
+int getPeersResult(char * fileName){
+
+        FILE *file = fopen(fileName, "r");
+        if(file == NULL)
+        {
+            printf("Cannot search result \n");
+            return 0;
+        }
+
+        //printf("\nNoi dung file client gui len:\n\n");
+        char *line = NULL;
+        size_t len = 0;
+        ssize_t read;
+        while ((read = getline(&line, &len, file)) != -1) 
+        {
+        //printf("Retrieved line of length %zu:\n", read);
+            printf("%s", line);
+        }
+        printf("\n");
+        fclose(file);
+        
+        return 1;
+}
 
