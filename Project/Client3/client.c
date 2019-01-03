@@ -286,7 +286,7 @@ void *synchronizeFolder()
                     return NULL;
                 }
                 else{
-                    printf("=====Synchronizing\n");
+                    printf("=====Synchronizing Complete\n");
                 }
                 
                 close(socketToUpdate);
