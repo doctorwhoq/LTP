@@ -138,7 +138,7 @@ void *handleSynThread(void *socketInfo)
     if(receiveFile(clientFileName,socketId) == 1) {
         printf("Synchronizing successfully \n");
     }else{
-        printf("Syncronize failed \n");
+        printf("Synchronize failed \n");
     }
     // saving client update info
     
@@ -163,7 +163,7 @@ void * handleReqThread(void *socketInfo)
 
         if(readResult == 0 || strcmp(buffer,"") == 0)
         {
-            printf("  Client has closed its connection \n ");
+            printf("\nClient has closed its connection \n ");
             break;
             //fix client ctrl+c or buffer = ""
         }
@@ -300,7 +300,7 @@ int receiveFile(char* fileName, int socket)
             printf("Cannot open client file update");
         }
 
-        printf("\nNoi dung file client gui len:\n\n");
+        printf("\n-----Noi dung file client gui len-------\n");
         char *line = NULL;
         size_t len = 0;
         ssize_t read;
@@ -309,7 +309,7 @@ int receiveFile(char* fileName, int socket)
         //printf("Retrieved line of length %zu:\n", read);
             printf("%s", line);
         }
-        printf("\n");
+        printf("\n\n");
         fclose(file);
         
         return 1;
