@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
     thisHost.sin_addr.s_addr = htonl(INADDR_ANY);
     memset(thisHost.sin_zero,'\0',sizeof(thisHost.sin_zero));
 
-    printf("\n------Xin chao, day la chuong trinh gui va nhan file giua cac peer----");
+    printf("\n----------Xin chao, day la chuong trinh gui va nhan file giua cac peer----------");
     printf("\n----Chuong trinh se tu dong update danh sach chia se file len server moi 60s----");
    
     if(fileTransferSocket < 0 )
@@ -104,7 +104,7 @@ int main(int argc, char *argv[])
             //printf("Get host name successfully  \n ");
         }
         hostName[20] = '0';
-        printf("\n-----------Client %s  : UP and RUNNING ! -------------\n---------------Listening on %d----------------\n\n\n",hostName,BIND_PORT_CLIENT_3);
+        printf("\n-----------------------Client %s  : UP and RUNNING ! -------------------------\n---------------Listening on %d----------------\n\n\n",hostName,BIND_PORT_CLIENT_3);
     }
     else
         printf("Error on listening \n");
@@ -332,7 +332,7 @@ void *downloadFile()
     {
         //ENter file name so that server can search for it
         
-		printf("--------Enter the file name to download-------- : \n") ;
+		printf("--------Enter the file name you want to download-------- : \n") ;
 		fflush(stdin);
 		scanf("%s",selection);
         time1 = clock();
@@ -340,7 +340,7 @@ void *downloadFile()
 				selection[strlen(selection) - 1] = '\0';
 		if(strcmp(selection,"QUIT") == 0)
 			break;
-		printf("==You entered :  %s \n",selection);
+		printf("=======You entered :  %s \n",selection);
 
         int sentBytes = send(socketToSearch,selection,DEFAULT_NAME_SIZE,0);
         
@@ -349,7 +349,7 @@ void *downloadFile()
         bzero(result,sizeof(result));
         int searchRes = read(socketToSearch,result,REQ_SIZE);
         if(strcmp(result,FOUNDN) == 0){
-            printf("==File %s not found \n",selection);
+            printf("=========File %s not found \n",selection);
             time2 =clock();
         }
         else {
@@ -359,7 +359,8 @@ void *downloadFile()
             strcpy(result,LOG);
             strcat(result,SEARCH_RES);
             strcat(result,selection);
-            printf("-----Getting search results \n");
+            printf("\n----------------------------------------------------\n");
+            printf("--------------Getting search results------------------ \n");
             // save file
             receiveFile(result,socketToSearch);
             //char desIp[DEFAULT_NAME_SIZE];
