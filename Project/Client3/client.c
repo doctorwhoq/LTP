@@ -19,8 +19,11 @@ const int BIND_PORT_CLIENT_3 = 11000;
 const int DEFAULT_SIZE = 1024;
 const int DEFAULT_NAME_SIZE = 30;
 const int DEFAULT_LENGTH = 20;
-const char* INDEX_HOST =  "192.168.0.100";
+const int REQ_SIZE = 12;
+const int SYN_TIME = 10 ;
+const int findFirst = 0;
 const int INDEX_PORT = 15000;
+const char* INDEX_HOST =  "192.168.0.100";
 const char* LOCAL_FILE = "Public/";
 const char* LIST_FILE = "index.txt";
 const int MAX_CONNECTING_CLIENTS = 5;
@@ -30,13 +33,10 @@ const char* SYNREQ = "REQ_TO_SYNC";
 const char* FOUNDS = "SEA_I_FOUND";
 const char* FOUNDN = "SEA_N_FOUND";
 const char* LOG = "Logs/";
-const int REQ_SIZE = 12;
-const int DOWNREQ_SIZE = 12;
 const char* DOWNREQ = "REQ_TO_DOWN"; 
-const int SYN_TIME = 10 ;
 const char* DEAD = "Peer OFFLINE";
 const char* ALIVE = "Peer ONLINE";
-const int findFirst = 1;
+
 
 
 
@@ -319,7 +319,7 @@ void *downloadFile()
          printf("\n------------IndexServer Connected-----------\n");
     }   
    // int size = sizeof(DOWNREQ)/sizeof(DOWNREQ[0]);
-    write(socketToSearch,DOWNREQ,DOWNREQ_SIZE);
+    write(socketToSearch,DOWNREQ,REQ_SIZE);
     time_t time1;
     time_t time2;
     //char buffer[15];
@@ -383,8 +383,11 @@ void *downloadFile()
                 }
                 //printf("Status : %d\n",currentStatus[i]);
             }
-            //printf("Select peer to download file from : \n");
-            //scanf("%d",&selected);
+            if(findFirst == 0){
+                printf("Select peer to download file from : \n");
+                scanf("%d",&selected);
+            }
+            
             
             if(currentStatus[selected] == 0){
                 printf("You selected an offline peer,download cant be continue \n, canceling your request...\n");

@@ -14,20 +14,22 @@
 
 const int INDEX_PORT = 15000;
 const int DEFAULT_NAME_SIZE = 30;
-const char* INDEX_HOST = "192.168.0.100";
+const int SYNREQ_SIZE = 12;
+const int REQ_SIZE = 12; 
 const int DEFAULT_SIZE = 1024;
 const int DEFAULT_LENGTH = 20;
 const int MAX_CLIENTS = 5;
+const char* TAIL = ".txt";
 const char* SYNREQ = "REQ_TO_SYNC";
 const char* DOWNREQ = "REQ_TO_DOWN";
 const char* SERVER_PEER_SHARE = "./peerShare/";
 const char* FOUNDS = "SEA_I_FOUND";
-const char* TAIL = ".txt";
 const char* FOUNDN = "SEA_N_FOUND";
 const char* LOG = "Logs/";
-const int SYNREQ_SIZE = 12;
-const int REQ_SIZE = 12; 
+const char* INDEX_HOST = "192.168.0.100";
 const char* SEARCH_RES = "SearchResult:";
+
+
 void * handleSynThread(void *);
 void * handleReqThread(void *);
 void saveClientAddr(const char *fileName, char *addr, char* port);
