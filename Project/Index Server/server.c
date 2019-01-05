@@ -26,7 +26,7 @@ const char* SERVER_PEER_SHARE = "./peerShare/";
 const char* FOUNDS = "SEA_I_FOUND";
 const char* FOUNDN = "SEA_N_FOUND";
 const char* LOG = "Logs/";
-const char* INDEX_HOST = "192.168.0.100";
+const char* INDEX_HOST = "192.168.43.87";
 const char* SEARCH_RES = "SearchResult:";
 
 
